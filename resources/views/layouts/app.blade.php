@@ -68,28 +68,6 @@
             font-weight: 700;
         }
 
-        .menu-search {
-            margin: 8px 10px 12px;
-            position: relative;
-        }
-
-        .menu-search input {
-            background: #314b52;
-            border: 0;
-            border-radius: 2px;
-            color: #d7e8ed;
-            height: 37px;
-            font-size: 13px;
-            padding-right: 34px;
-        }
-
-        .menu-search i {
-            position: absolute;
-            right: 11px;
-            top: 10px;
-            color: #a8c2c9;
-        }
-
         .nav-section {
             padding: 10px 14px;
             background: var(--sidebar-dark);
@@ -136,9 +114,44 @@
             z-index: 1020;
         }
 
+        .sidebar-toggle {
+            border: 0;
+            background: transparent;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+        }
+
+        .sidebar-toggle:hover,
+        .sidebar-toggle:focus {
+            color: #ffc107;
+        }
+
         .content-wrap {
             margin-left: 230px;
             padding: 86px 15px 28px;
+        }
+
+        .sidebar,
+        .topbar,
+        .content-wrap {
+            transition: margin-left .2s ease, left .2s ease, transform .2s ease;
+        }
+
+        body.sidebar-collapsed .sidebar {
+            transform: translateX(-230px);
+        }
+
+        body.sidebar-collapsed .topbar {
+            left: 0;
+        }
+
+        body.sidebar-collapsed .content-wrap {
+            margin-left: 0;
         }
 
         .portal-panel {
@@ -244,6 +257,11 @@
                 margin-left: 0;
                 padding-top: 18px;
             }
+
+            body.sidebar-collapsed .sidebar {
+                display: none;
+                transform: none;
+            }
         }
 
         @media print {
@@ -273,16 +291,12 @@
     @stack('styles')
 </head>
 <body>
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">MyADZU</div>
         <div class="profile-block">
             <div class="avatar-circle">{{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}</div>
             <div class="fw-semibold small">{{ auth()->user()->name ?? 'User' }}</div>
             <div class="text-info small">{{ ucfirst(auth()->user()->role ?? 'respondent') }}</div>
-        </div>
-        <div class="menu-search">
-            <input class="form-control" type="text" placeholder="Search menu...">
-            <i class="bi bi-search"></i>
         </div>
 
         <div class="nav-section">Main Navigation</div>
@@ -309,11 +323,12 @@
 
     <header class="topbar">
         <div class="d-flex align-items-center gap-3">
-            <i class="bi bi-list fs-4"></i>
+            <button class="sidebar-toggle" type="button" id="sidebarToggle" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="true" title="Toggle navigation">
+                <i class="bi bi-list fs-4"></i>
+            </button>
             <span class="fw-semibold">Energy Crisis Learning Continuity Dashboard</span>
         </div>
         <div class="d-flex align-items-center gap-4 small">
-            <i class="bi bi-bell-fill"></i>
             <span><i class="bi bi-person-fill me-1"></i> Welcome, {{ strtoupper(auth()->user()->name ?? 'USER') }}!</span>
         </div>
     </header>
@@ -338,6 +353,21 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+        function setSidebarState(collapsed) {
+            document.body.classList.toggle('sidebar-collapsed', collapsed);
+            sidebarToggle?.setAttribute('aria-expanded', String(! collapsed));
+            localStorage.setItem('sidebarCollapsed', String(collapsed));
+        }
+
+        setSidebarState(sidebarCollapsed);
+        sidebarToggle?.addEventListener('click', () => {
+            setSidebarState(! document.body.classList.contains('sidebar-collapsed'));
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>
