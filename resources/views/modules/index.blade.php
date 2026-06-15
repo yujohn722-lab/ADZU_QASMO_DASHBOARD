@@ -105,7 +105,7 @@
                                     @php $value = $record->{$field}; @endphp
                                     <td>
                                         @if ($field === 'reporting_month')
-                                            {{ $months[$value] ?? $value }}
+                                            {{ $months[$value] ?? ($value ?: 'Not available') }}
                                         @elseif (is_numeric($value) && ! in_array($field, ['reporting_year', 'week_number'], true))
                                             {{ number_format((float) $value, 2) }}
                                         @else

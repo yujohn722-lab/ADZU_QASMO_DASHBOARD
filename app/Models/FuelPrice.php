@@ -30,6 +30,7 @@ class FuelPrice extends Model
     protected $fillable = [
         'user_id',
         'respondent_name',
+        'reporting_month',
         'reporting_year',
         'week_number',
         'shell_fuel_save_diesel',
@@ -48,6 +49,7 @@ class FuelPrice extends Model
     ];
 
     protected $casts = [
+        'reporting_month' => 'integer',
         'reporting_year' => 'integer',
         'week_number' => 'integer',
         'shell_fuel_save_diesel' => 'decimal:2',

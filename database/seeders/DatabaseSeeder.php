@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
 
         $this->seedFuelPrices($respondent);
         $this->seedElectricity($respondent);
-        $this->seedFuelVehiclePlaceholder($respondent);
+        $this->seedFuelVehicleUse($respondent);
         $this->seedSolar($respondent);
         $this->seedStudentServices($respondent);
         $this->seedEstimatedSavings($respondent);
@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
             FuelPrice::create([
                 'user_id' => $user->id,
                 'respondent_name' => $user->name,
+                'reporting_month' => 4,
                 'reporting_year' => $row[0],
                 'week_number' => $row[1],
                 'shell_fuel_save_diesel' => $row[2],
@@ -105,14 +106,15 @@ class DatabaseSeeder extends Seeder
         }
     }
 
-    private function seedFuelVehiclePlaceholder(User $user): void
+    private function seedFuelVehicleUse(User $user): void
     {
         FuelVehicleUse::create([
             'user_id' => $user->id,
             'respondent_name' => $user->name,
             'reporting_month' => 4,
             'reporting_year' => 2026,
-            'remarks' => 'Fuel and Vehicle Use inputs will be added later.',
+            'total_fuel_cost_incurred' => 185000,
+            'remarks' => 'Monthly fuel cost sample.',
         ]);
     }
 

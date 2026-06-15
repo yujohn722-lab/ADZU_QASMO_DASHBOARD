@@ -7,8 +7,19 @@
 <div class="row g-3">
     @foreach ($fields as $field)
         @php
-            $name = $field['name'];
             $type = $field['type'] ?? 'text';
+        @endphp
+
+        @if ($type === 'vehicle_table')
+            <div class="{{ $field['col'] ?? 'col-12' }}">
+                <label class="form-label">{{ $field['label'] ?? 'Vehicle list' }}</label>
+                @include('modules.partials._vehicle_reference_table')
+            </div>
+            @continue
+        @endif
+
+        @php
+            $name = $field['name'];
             $value = old($name, $record->{$name} ?? '');
             $required = in_array('required', $field['rules'] ?? [], true);
         @endphp

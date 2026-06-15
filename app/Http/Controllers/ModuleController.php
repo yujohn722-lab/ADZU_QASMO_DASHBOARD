@@ -153,6 +153,7 @@ abstract class ModuleController extends Controller
     protected function rules(): array
     {
         return collect($this->fields)
+            ->filter(fn (array $field) => isset($field['name'], $field['rules']))
             ->mapWithKeys(fn (array $field) => [$field['name'] => $field['rules']])
             ->all();
     }
@@ -178,7 +179,7 @@ abstract class ModuleController extends Controller
 
     protected function hasField(string $name): bool
     {
-        return collect($this->fields)->contains(fn (array $field) => $field['name'] === $name);
+        return collect($this->fields)->contains(fn (array $field) => ($field['name'] ?? null) === $name);
     }
 
     protected function sumFields(array $data, array $fields): float

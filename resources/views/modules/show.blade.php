@@ -20,6 +20,14 @@
                 <table class="table table-bordered align-middle">
                     <tbody>
                         @foreach ($fields as $field)
+                            @if (($field['type'] ?? null) === 'vehicle_table')
+                                <tr>
+                                    <th style="width: 34%;">{{ $field['label'] ?? 'Vehicle list' }}</th>
+                                    <td>@include('modules.partials._vehicle_reference_table')</td>
+                                </tr>
+                                @continue
+                            @endif
+
                             @php
                                 $name = $field['name'];
                                 $value = $record->{$name};
@@ -28,7 +36,7 @@
                                 <th style="width: 34%;">{{ $field['label'] }}</th>
                                 <td>
                                     @if ($name === 'reporting_month')
-                                        {{ $months[$value] ?? $value }}
+                                        {{ $months[$value] ?? ($value ?: 'Not available') }}
                                     @elseif (is_numeric($value) && ! in_array($name, ['reporting_year', 'week_number'], true))
                                         {{ number_format((float) $value, 2) }}
                                     @else

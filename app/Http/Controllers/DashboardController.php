@@ -20,6 +20,7 @@ class DashboardController extends Controller
 
         $fuelPrices = FuelPrice::visibleTo($user)
             ->orderBy('reporting_year')
+            ->orderBy('reporting_month')
             ->orderBy('week_number')
             ->get();
 
@@ -36,10 +37,10 @@ class DashboardController extends Controller
             ->orderBy('reporting_month')
             ->get();
         $savings = EstimatedSaving::visibleTo($user)->get();
-        $fuelVehicleCount = FuelVehicleUse::visibleTo($user)->count();
+        $fuelVehicles = FuelVehicleUse::visibleTo($user)->get();
 
         $latestFuel = $fuelPrices
-            ->sortByDesc(fn (FuelPrice $record) => ($record->reporting_year * 100) + $record->week_number)
+            ->sortByDesc(fn (FuelPrice $record) => ($record->reporting_year * 10000) + ((int) $record->reporting_month * 100) + $record->week_number)
             ->first();
 
         $electricityCampus = [
@@ -89,10 +90,11 @@ class DashboardController extends Controller
                 'totalSolarSavings' => round($solar->sum('estimated_savings'), 2),
                 'totalServiceTransactions' => $services->sum('student_transactions_count'),
                 'totalEstimatedSavings' => round($savings->sum('total_estimated_savings'), 2),
-                'fuelVehicleCount' => $fuelVehicleCount,
+                'fuelVehicleCount' => $fuelVehicles->count(),
+                'totalFuelCostIncurred' => round($fuelVehicles->sum(fn ($record) => (float) $record->total_fuel_cost_incurred), 2),
             ],
             'charts' => [
-                'fuelLabels' => $fuelPrices->map(fn (FuelPrice $record) => $record->reporting_year.' W'.$record->week_number)->values(),
+                'fuelLabels' => $fuelPrices->map(fn (FuelPrice $record) => $record->reporting_year.' '.$this->monthName((int) $record->reporting_month).' W'.$record->week_number)->values(),
                 'dieselAverages' => $fuelPrices->map(fn (FuelPrice $record) => $record->averageDieselPrice())->values(),
                 'gasolineAverages' => $fuelPrices->map(fn (FuelPrice $record) => $record->averageGasolinePrice())->values(),
                 'shellDiesel' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->shell_fuel_save_diesel)->values(),

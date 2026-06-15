@@ -94,6 +94,7 @@
                     <div class="list-group">
                         <a href="{{ route('fuel-prices.create') }}" class="list-group-item list-group-item-action"><i class="bi bi-fuel-pump me-2"></i> Encode Weekly Fuel Prices</a>
                         <a href="{{ route('electricity-consumptions.create') }}" class="list-group-item list-group-item-action"><i class="bi bi-lightning-charge me-2"></i> Encode Electricity Consumption</a>
+                        <a href="{{ route('fuel-vehicle-uses.create') }}" class="list-group-item list-group-item-action"><i class="bi bi-truck me-2"></i> Encode Fuel and Vehicle Use</a>
                         <a href="{{ route('solar-performances.create') }}" class="list-group-item list-group-item-action"><i class="bi bi-sun me-2"></i> Encode Solar Performance</a>
                         <a href="{{ route('reports.index') }}" class="list-group-item list-group-item-action"><i class="bi bi-printer me-2"></i> Generate Monthly Report</a>
                     </div>
@@ -145,8 +146,18 @@
                     <span class="text-muted">-</span>
                 </div>
                 <div class="portal-panel-body">
-                    <div class="alert alert-info mb-2">Fuel and Vehicle Use inputs will be added later.</div>
-                    <div class="small text-muted">{{ $summary['fuelVehicleCount'] }} placeholder record(s) available.</div>
+                    <table class="table table-sm align-middle">
+                        <tbody>
+                            <tr>
+                                <th>Total fuel cost incurred</th>
+                                <td>{{ number_format($summary['totalFuelCostIncurred'] ?? 0, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <th>Submitted records</th>
+                                <td>{{ number_format($summary['fuelVehicleCount']) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
