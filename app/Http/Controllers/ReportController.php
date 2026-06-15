@@ -104,12 +104,15 @@ class ReportController extends Controller
         $user = $request->user();
         $electricity = $this->filterCollection($request, ElectricityConsumption::visibleTo($user)->get());
         $fuel = FuelPrice::visibleTo($user)
+            ->when($request->filled('reporting_month'), fn ($query) => $query->where('reporting_month', $request->input('reporting_month')))
             ->when($request->filled('reporting_year'), fn ($query) => $query->where('reporting_year', $request->input('reporting_year')))
             ->orderByDesc('reporting_year')
+            ->orderByDesc('reporting_month')
             ->orderByDesc('week_number')
             ->first();
         $solar = $this->filterCollection($request, SolarPerformance::visibleTo($user)->get());
         $services = $this->filterCollection($request, StudentServiceVolume::visibleTo($user)->get());
+        $fuelVehicles = $this->filterCollection($request, FuelVehicleUse::visibleTo($user)->get());
         $savings = EstimatedSaving::visibleTo($user)
             ->when($request->filled('reporting_year'), fn ($query) => $query->where('reporting_year', $request->input('reporting_year')))
             ->when($request->filled('office_unit_name'), fn ($query) => $query->where('office_unit_name', $request->input('office_unit_name')))
@@ -120,6 +123,7 @@ class ReportController extends Controller
             'Total electricity consumption (kWh)' => round($electricity->sum(fn ($record) => $record->totalKwh()), 2),
             'Latest average diesel price' => $fuel?->averageDieselPrice() ?? 0,
             'Latest average gasoline price' => $fuel?->averageGasolinePrice() ?? 0,
+            'Total fuel cost incurred (PHP)' => round($fuelVehicles->sum(fn ($record) => (float) $record->total_fuel_cost_incurred), 2),
             'Total solar energy generated (kWh)' => round($solar->sum('monthly_solar_energy_kwh'), 2),
             'Estimated solar savings' => round($solar->sum('estimated_savings'), 2),
             'Student service transactions' => (int) $services->sum('student_transactions_count'),
@@ -141,11 +145,25 @@ class ReportController extends Controller
         return match ($moduleKey) {
             'fuel-prices' => [
                 'type' => 'line',
-                'labels' => $records->sortBy('week_number')->map(fn ($record) => $record->reporting_year.' W'.$record->week_number)->values(),
+                'labels' => $records->sortBy(fn ($record) => ($record->reporting_year * 10000) + ((int) $record->reporting_month * 100) + $record->week_number)
+                    ->map(fn ($record) => $record->reporting_year.' '.$this->shortMonthName((int) $record->reporting_month).' W'.$record->week_number)
+                    ->values(),
                 'datasets' => [
-                    ['label' => 'Diesel average', 'data' => $records->sortBy('week_number')->map(fn ($record) => $record->averageDieselPrice())->values()],
-                    ['label' => 'Gasoline average', 'data' => $records->sortBy('week_number')->map(fn ($record) => $record->averageGasolinePrice())->values()],
+                    ['label' => 'Diesel average', 'data' => $records->sortBy(fn ($record) => ($record->reporting_year * 10000) + ((int) $record->reporting_month * 100) + $record->week_number)->map(fn ($record) => $record->averageDieselPrice())->values()],
+                    ['label' => 'Gasoline average', 'data' => $records->sortBy(fn ($record) => ($record->reporting_year * 10000) + ((int) $record->reporting_month * 100) + $record->week_number)->map(fn ($record) => $record->averageGasolinePrice())->values()],
                 ],
+            ],
+            'fuel-vehicle-uses' => [
+                'type' => 'bar',
+                'labels' => $records->sortBy(fn ($record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
+                    ->map(fn ($record) => $record->reporting_year.' '.$this->shortMonthName((int) $record->reporting_month))
+                    ->values(),
+                'datasets' => [[
+                    'label' => 'Total fuel cost incurred (PHP)',
+                    'data' => $records->sortBy(fn ($record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
+                        ->map(fn ($record) => (float) $record->total_fuel_cost_incurred)
+                        ->values(),
+                ]],
             ],
             'electricity-consumptions' => [
                 'type' => 'bar',
@@ -214,6 +232,7 @@ class ReportController extends Controller
                 'model' => FuelPrice::class,
                 'columns' => [
                     'respondent_name' => 'Respondent',
+                    'reporting_month' => 'Month',
                     'reporting_year' => 'Year',
                     'week_number' => 'Week',
                     'shell_fuel_save_diesel' => 'Shell Diesel',
@@ -240,6 +259,7 @@ class ReportController extends Controller
                     'respondent_name' => 'Respondent',
                     'reporting_month' => 'Month',
                     'reporting_year' => 'Year',
+                    'total_fuel_cost_incurred' => 'Total Fuel Cost Incurred (PHP)',
                     'remarks' => 'Remarks',
                 ],
             ],
@@ -298,5 +318,10 @@ class ReportController extends Controller
             11 => 'November',
             12 => 'December',
         ];
+    }
+
+    private function shortMonthName(int $month): string
+    {
+        return substr($this->months()[$month] ?? 'N/A', 0, 3);
     }
 }

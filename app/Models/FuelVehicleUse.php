@@ -14,11 +14,13 @@ class FuelVehicleUse extends Model
         'respondent_name',
         'reporting_month',
         'reporting_year',
+        'total_fuel_cost_incurred',
         'remarks',
     ];
 
     protected $casts = [
         'reporting_month' => 'integer',
         'reporting_year' => 'integer',
+        'total_fuel_cost_incurred' => 'decimal:2',
     ];
 }

@@ -20,6 +20,7 @@ class FuelPriceController extends ModuleController
 
     protected array $tableColumns = [
         'respondent_name' => 'Respondent',
+        'reporting_month' => 'Month',
         'reporting_year' => 'Year',
         'week_number' => 'Week',
         'shell_fuel_save_diesel' => 'Shell Diesel',
@@ -29,6 +30,7 @@ class FuelPriceController extends ModuleController
 
     protected array $fields = [
         ['name' => 'respondent_name', 'label' => 'Name of respondent', 'type' => 'text', 'rules' => ['required', 'string', 'max:255'], 'col' => 'col-md-4'],
+        ['name' => 'reporting_month', 'label' => 'Reporting month', 'type' => 'month', 'rules' => ['required', 'integer', 'between:1,12'], 'col' => 'col-md-4'],
         ['name' => 'reporting_year', 'label' => 'Reporting year', 'type' => 'number', 'rules' => ['required', 'integer', 'min:2000', 'max:2100'], 'col' => 'col-md-4'],
         ['name' => 'week_number', 'label' => 'Week number', 'type' => 'number', 'rules' => ['required', 'integer', 'min:1', 'max:53'], 'col' => 'col-md-4'],
         ['name' => 'shell_fuel_save_diesel', 'label' => 'Shell Fuel Save Diesel', 'type' => 'number', 'step' => '0.01', 'rules' => ['nullable', 'numeric', 'min:0'], 'col' => 'col-md-4'],
