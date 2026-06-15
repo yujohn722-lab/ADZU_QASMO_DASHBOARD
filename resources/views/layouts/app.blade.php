@@ -131,6 +131,54 @@
             color: #ffc107;
         }
 
+        .notification-button {
+            border: 0;
+            background: transparent;
+            color: #fff;
+            position: relative;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-button:hover,
+        .notification-button:focus {
+            color: #ffc107;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            min-width: 17px;
+            height: 17px;
+            border-radius: 999px;
+            background: #dc3545;
+            color: #fff;
+            font-size: 10px;
+            line-height: 17px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .notification-menu {
+            width: min(360px, 92vw);
+            max-height: 430px;
+            overflow-y: auto;
+            border-radius: 2px;
+        }
+
+        .notification-item {
+            white-space: normal;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .notification-item.unread {
+            background: #eef7fb;
+        }
+
         .content-wrap {
             margin-left: 230px;
             padding: 86px 15px 28px;
@@ -328,7 +376,34 @@
             </button>
             <span class="fw-semibold">Energy Crisis Learning Continuity Dashboard</span>
         </div>
-        <div class="d-flex align-items-center gap-4 small">
+        <div class="d-flex align-items-center gap-3 small">
+            <div class="dropdown">
+                <button class="notification-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                    @if (($navUnreadCount ?? 0) > 0)
+                        <span class="notification-badge">{{ $navUnreadCount > 9 ? '9+' : $navUnreadCount }}</span>
+                    @endif
+                </button>
+                <div class="dropdown-menu dropdown-menu-end notification-menu p-0">
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                        <span class="fw-semibold">Notifications</span>
+                        @if (($navUnreadCount ?? 0) > 0)
+                            <form method="POST" action="{{ route('notifications.mark-all-read') }}">
+                                @csrf
+                                <button class="btn btn-sm btn-link p-0" type="submit">Mark all read</button>
+                            </form>
+                        @endif
+                    </div>
+                    @forelse (($navNotifications ?? collect()) as $notification)
+                        <a class="dropdown-item notification-item py-2 {{ $notification->isUnread() ? 'unread' : '' }}" href="{{ route('notifications.open', $notification) }}">
+                            <div>{{ $notification->message }}</div>
+                            <div class="text-muted small">{{ $notification->created_at->diffForHumans() }}</div>
+                        </a>
+                    @empty
+                        <div class="px-3 py-3 text-muted">No notifications.</div>
+                    @endforelse
+                </div>
+            </div>
             <span><i class="bi bi-person-fill me-1"></i> Welcome, {{ strtoupper(auth()->user()->name ?? 'USER') }}!</span>
         </div>
     </header>

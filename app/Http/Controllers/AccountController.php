@@ -22,6 +22,7 @@ class AccountController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'current_password' => ['nullable', 'required_with:password', 'string'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -29,6 +30,12 @@ class AccountController extends Controller
         $user->email = $data['email'];
 
         if (! empty($data['password'])) {
+            if (! Hash::check($data['current_password'] ?? '', $user->password)) {
+                return back()
+                    ->withErrors(['current_password' => 'The old password is incorrect.'])
+                    ->withInput($request->except(['current_password', 'password', 'password_confirmation']));
+            }
+
             $user->password = Hash::make($data['password']);
         }
 

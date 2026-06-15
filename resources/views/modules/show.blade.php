@@ -16,6 +16,47 @@
                 <div class="alert alert-info">{{ $placeholderMessage }}</div>
             @endif
 
+            @if ($reportReview)
+                <div class="alert {{ $reportReview->status === 'accepted' ? 'alert-success' : ($reportReview->status === 'changes_requested' ? 'alert-warning' : ($reportReview->status === 'rejected' ? 'alert-danger' : 'alert-info')) }}">
+                    <div class="fw-semibold">Review Status: {{ $reportReview->statusLabel() }}</div>
+                    @if ($reportReview->admin_message)
+                        <div class="mt-1">{!! nl2br(e($reportReview->admin_message)) !!}</div>
+                    @endif
+                    @if ($reportReview->reviewer)
+                        <div class="small mt-1">Reviewed by {{ $reportReview->reviewer->name }} {{ $reportReview->reviewed_at ? 'on '.$reportReview->reviewed_at->format('M d, Y h:i A') : '' }}</div>
+                    @endif
+                </div>
+
+                @if (auth()->user()->isAdmin())
+                    <div class="portal-panel mb-3 no-print">
+                        <div class="portal-panel-header">
+                            <div class="title"><i class="bi bi-clipboard-check"></i> Admin Review</div>
+                            <span class="text-muted">Submitted by {{ $reportReview->respondent?->name ?? 'Respondent' }}</span>
+                        </div>
+                        <div class="portal-panel-body">
+                            <form method="POST" action="{{ route('report-reviews.update-status', $reportReview) }}" class="row g-3">
+                                @csrf
+                                <div class="col-md-4">
+                                    <label class="form-label" for="status">Decision</label>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <option value="accepted">Accept</option>
+                                        <option value="rejected">Reject</option>
+                                        <option value="changes_requested">Recommend Changes</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label" for="admin_message">Message to respondent</label>
+                                    <textarea class="form-control" id="admin_message" name="admin_message" rows="2" placeholder="Required for rejection or recommended changes">{{ old('admin_message') }}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <button class="btn btn-primary" type="submit"><i class="bi bi-send me-1"></i> Submit Review</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+            @endif
+
             <div class="table-responsive">
                 <table class="table table-bordered align-middle">
                     <tbody>
