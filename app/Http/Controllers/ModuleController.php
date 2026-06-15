@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ReportNotification;
+use App\Models\ReportReview;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,6 +58,7 @@ abstract class ModuleController extends Controller
         $data = $this->beforeSave($data, $request, null);
 
         $record = $this->modelClass::create($data);
+        $this->notifyAdminsAboutSubmission($record, $request, 'submitted');
 
         return redirect()
             ->route($this->routeName.'.show', $record)
@@ -67,6 +71,7 @@ abstract class ModuleController extends Controller
 
         return view('modules.show', $this->viewData([
             'record' => $record,
+            'reportReview' => $this->reviewFor($record),
         ]));
     }
 
@@ -85,6 +90,7 @@ abstract class ModuleController extends Controller
         $data = $this->beforeSave($this->validatedData($request), $request, $record);
 
         $record->update($data);
+        $this->notifyAdminsAboutSubmission($record, $request, 'updated');
 
         return redirect()
             ->route($this->routeName.'.show', $record)
@@ -185,6 +191,52 @@ abstract class ModuleController extends Controller
     protected function sumFields(array $data, array $fields): float
     {
         return collect($fields)->sum(fn (string $field) => (float) ($data[$field] ?? 0));
+    }
+
+    protected function notifyAdminsAboutSubmission(Model $record, Request $request, string $event): void
+    {
+        if ($request->user()->isAdmin()) {
+            return;
+        }
+
+        $review = ReportReview::updateOrCreate(
+            [
+                'reportable_type' => get_class($record),
+                'reportable_id' => $record->getKey(),
+            ],
+            [
+                'module_key' => $this->routeName,
+                'module_label' => $this->title,
+                'respondent_id' => $record->user_id,
+                'status' => 'pending',
+                'admin_message' => null,
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+            ]
+        );
+
+        $respondentName = $review->respondent?->name ?? 'A respondent';
+
+        User::query()
+            ->where('role', 'admin')
+            ->get()
+            ->each(function (User $admin) use ($review, $record, $event, $respondentName) {
+                ReportNotification::create([
+                    'user_id' => $admin->id,
+                    'report_review_id' => $review->id,
+                    'type' => 'report_'.$event,
+                    'message' => $review->module_label.' report #'.$record->getKey().' was '.$event.' by '.$respondentName.'.',
+                ]);
+            });
+    }
+
+    protected function reviewFor(Model $record): ?ReportReview
+    {
+        return ReportReview::query()
+            ->where('reportable_type', get_class($record))
+            ->where('reportable_id', $record->getKey())
+            ->with(['respondent', 'reviewer'])
+            ->first();
     }
 
     protected function months(): Collection

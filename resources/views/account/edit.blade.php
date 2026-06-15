@@ -21,6 +21,11 @@
                     <input class="form-control" id="email" name="email" type="email" value="{{ old('email', $user->email) }}" required>
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label" for="current_password">Old password</label>
+                    <input class="form-control" id="current_password" name="current_password" type="password" autocomplete="current-password">
+                    <div class="form-text">Required only when changing your password.</div>
+                </div>
+                <div class="col-md-6">
                     <label class="form-label" for="password">New password</label>
                     <input class="form-control" id="password" name="password" type="password" autocomplete="new-password">
                 </div>
