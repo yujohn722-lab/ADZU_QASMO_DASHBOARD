@@ -350,13 +350,17 @@
         <div class="nav-section">Main Navigation</div>
         <nav class="nav flex-column">
             <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
+        </nav>
+
+        <div class="nav-section">Data Modules</div>
+        <nav class="nav flex-column">
             <a class="nav-link {{ request()->routeIs('fuel-prices.*') ? 'active' : '' }}" href="{{ route('fuel-prices.index') }}"><i class="bi bi-fuel-pump"></i> Weekly Fuel Prices</a>
             <a class="nav-link {{ request()->routeIs('electricity-consumptions.*') ? 'active' : '' }}" href="{{ route('electricity-consumptions.index') }}"><i class="bi bi-lightning-charge"></i> Electricity Consumption</a>
             <a class="nav-link {{ request()->routeIs('fuel-vehicle-uses.*') ? 'active' : '' }}" href="{{ route('fuel-vehicle-uses.index') }}"><i class="bi bi-truck"></i> Fuel and Vehicle Use</a>
             <a class="nav-link {{ request()->routeIs('solar-performances.*') ? 'active' : '' }}" href="{{ route('solar-performances.index') }}"><i class="bi bi-sun"></i> Solar Savings</a>
             <a class="nav-link {{ request()->routeIs('student-service-volumes.*') ? 'active' : '' }}" href="{{ route('student-service-volumes.index') }}"><i class="bi bi-people"></i> Student Service Volume</a>
             <a class="nav-link {{ request()->routeIs('estimated-savings.*') ? 'active' : '' }}" href="{{ route('estimated-savings.index') }}"><i class="bi bi-cash-coin"></i> Estimated Savings</a>
-            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
         </nav>
 
         <div class="nav-section">Common Menu</div>
