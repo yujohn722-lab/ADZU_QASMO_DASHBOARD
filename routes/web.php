@@ -26,6 +26,9 @@ Route::middleware(['auth', 'no-cache'])->group(function () {
 
     Route::resource('fuel-prices', FuelPriceController::class);
     Route::resource('electricity-consumptions', ElectricityConsumptionController::class);
+    Route::post('/fuel-vehicle-uses/vehicles', [FuelVehicleUseController::class, 'storeVehicle'])->name('fuel-vehicle-uses.vehicles.store');
+    Route::patch('/fuel-vehicle-uses/vehicles/{vehicle}/toggle', [FuelVehicleUseController::class, 'toggleVehicle'])->name('fuel-vehicle-uses.vehicles.toggle');
+    Route::delete('/fuel-vehicle-uses/vehicles/{vehicle}', [FuelVehicleUseController::class, 'destroyVehicle'])->name('fuel-vehicle-uses.vehicles.destroy');
     Route::resource('fuel-vehicle-uses', FuelVehicleUseController::class);
     Route::resource('solar-performances', SolarPerformanceController::class);
     Route::resource('student-service-volumes', StudentServiceVolumeController::class);

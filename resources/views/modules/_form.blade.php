@@ -40,6 +40,15 @@
                         <option value="{{ $monthValue }}" @selected((string) $value === (string) $monthValue)>{{ $monthLabel }}</option>
                     @endforeach
                 </select>
+            @elseif ($type === 'select')
+                <select class="form-select @error($name) is-invalid @enderror" id="{{ $name }}" name="{{ $name }}" @required($required)>
+                    <option value="">Select {{ str_replace('_', ' ', $name) }}</option>
+                    @if ($name === 'building_name')
+                        @foreach (($buildings ?? []) as $buildingValue => $buildingLabel)
+                            <option value="{{ $buildingValue }}" @selected((string) $value === (string) $buildingValue)>{{ $buildingLabel }}</option>
+                        @endforeach
+                    @endif
+                </select>
             @else
                 <input
                     class="form-control @error($name) is-invalid @enderror"
@@ -48,6 +57,7 @@
                     type="{{ $type }}"
                     value="{{ $value }}"
                     @isset($field['step']) step="{{ $field['step'] }}" @endisset
+                    @if (! empty($field['readonly'])) readonly @endif
                     @required($required)
                 >
             @endif
