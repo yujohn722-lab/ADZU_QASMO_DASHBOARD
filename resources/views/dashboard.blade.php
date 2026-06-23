@@ -3,217 +3,156 @@
 @section('title', 'Dashboard - Energy Crisis Dashboard')
 
 @section('content')
-    <div class="row g-3 mb-2">
-        <div class="col-xl-3 col-md-6">
-            <div class="metric-card">
-                <div class="label">Total Electricity Consumption</div>
-                <div class="value">{{ number_format($summary['totalElectricity'], 2) }}</div>
-                <div class="text-muted small">kWh across campuses</div>
+    <div class="portal-panel">
+        <div class="portal-panel-header">
+            <div class="title"><i class="bi bi-speedometer2"></i> Dashboard</div>
+            <div class="d-flex gap-2 no-print">
+                <a class="btn btn-sm btn-outline-primary" href="{{ $recordsRoute }}"><i class="bi bi-table me-1"></i> View Records</a>
+                <a class="btn btn-sm btn-primary" href="{{ $createRoute }}"><i class="bi bi-plus-lg me-1"></i> Create</a>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="metric-card">
-                <div class="label">Latest Diesel / Gasoline Avg</div>
-                <div class="value">{{ number_format($summary['latestDieselAverage'] ?? 0, 2) }} / {{ number_format($summary['latestGasolineAverage'] ?? 0, 2) }}</div>
-                <div class="text-muted small">Latest weekly price averages</div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="metric-card">
-                <div class="label">Solar Generated</div>
-                <div class="value">{{ number_format($summary['totalSolarGenerated'], 2) }}</div>
-                <div class="text-muted small">kWh, estimated savings {{ number_format($summary['totalSolarSavings'], 2) }}</div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="metric-card">
-                <div class="label">Estimated Savings</div>
-                <div class="value">{{ number_format($summary['totalEstimatedSavings'], 2) }}</div>
-                <div class="text-muted small">Reduced travel, utilities, activities</div>
-            </div>
+        <div class="portal-panel-body">
+            <form method="GET" action="{{ route('dashboard') }}" class="row g-2 align-items-end no-print">
+                <div class="col-lg-4 col-md-6">
+                    <label class="form-label">Chart and graph category</label>
+                    <select class="form-select" name="category" onchange="this.form.submit()">
+                        @foreach ($categories as $key => $category)
+                            <option value="{{ $key }}" @selected($selectedCategory === $key)>{{ $category['label'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-outline-primary" type="submit"><i class="bi bi-filter me-1"></i> Filter</button>
+                </div>
+            </form>
         </div>
     </div>
 
+    <div class="portal-panel">
+        <div class="portal-panel-header">
+            <div class="title"><i class="bi {{ $pageIcon }}"></i> {{ $pageTitle }}</div>
+            <span class="text-muted">-</span>
+        </div>
+        <div class="portal-panel-body">
+            <p class="text-muted mb-0">{{ $description }}</p>
+        </div>
+    </div>
+
+    @if (! empty($metrics))
+        <div class="row g-3 mb-2">
+            @foreach ($metrics as $metric)
+                <div class="col-xl-3 col-md-6">
+                    <div class="metric-card">
+                        <div class="label">{{ $metric['label'] }}</div>
+                        <div class="value">{{ $metric['value'] }}</div>
+                        <div class="text-muted small">{{ $metric['hint'] ?? '' }}</div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     <div class="row g-3">
-        <div class="col-xl-8">
-            <div class="portal-panel">
-                <div class="portal-panel-header">
-                    <div class="title"><i class="bi bi-graph-up"></i> Weekly Fuel Price Movement</div>
-                    <span class="text-muted">-</span>
-                </div>
-                <div class="portal-panel-body chart-box">
-                    <canvas id="fuelChart"></canvas>
-                </div>
-            </div>
-
-            <div class="portal-panel">
-                <div class="portal-panel-header">
-                    <div class="title"><i class="bi bi-lightning-charge"></i> Electricity Consumption</div>
-                    <span class="text-muted">-</span>
-                </div>
-                <div class="portal-panel-body">
-                    <div class="row g-3">
-                        <div class="col-lg-6 chart-box">
-                            <canvas id="campusChart"></canvas>
-                        </div>
-                        <div class="col-lg-6 chart-box">
-                            <canvas id="buildingChart"></canvas>
-                        </div>
+        @foreach ($charts as $chart)
+            <div class="{{ ! empty($chart['wide']) ? 'col-12' : 'col-xl-6' }}">
+                <div class="portal-panel">
+                    <div class="portal-panel-header">
+                        <div class="title"><i class="bi {{ $chart['icon'] }}"></i> {{ $chart['title'] }}</div>
+                        @if (! empty($chart['filterOptions']))
+                            <select class="form-select form-select-sm" style="width: 240px;" data-chart-filter="{{ $chart['id'] }}">
+                                @foreach ($chart['filterOptions'] as $option)
+                                    <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <span class="text-muted">-</span>
+                        @endif
                     </div>
-                    <div class="mt-3 chart-box">
-                        <canvas id="electricityTrendChart"></canvas>
+                    <div class="portal-panel-body chart-box">
+                        <canvas id="{{ $chart['id'] }}"></canvas>
                     </div>
                 </div>
             </div>
-
-            <div class="portal-panel">
-                <div class="portal-panel-header">
-                    <div class="title"><i class="bi bi-sun"></i> Solar and Services Performance</div>
-                    <span class="text-muted">-</span>
-                </div>
-                <div class="portal-panel-body">
-                    <div class="row g-3">
-                        <div class="col-lg-6 chart-box">
-                            <canvas id="solarChart"></canvas>
-                        </div>
-                        <div class="col-lg-6 chart-box">
-                            <canvas id="serviceChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-4">
-            <div class="portal-panel">
-                <div class="portal-panel-header">
-                    <div class="title"><i class="bi bi-box-arrow-up-right"></i> Shortcuts</div>
-                    <span class="text-muted">-</span>
-                </div>
-                <div class="portal-panel-body shortcut-list">
-                    <div class="list-group">
-                        <a href="{{ route('fuel-prices.create') }}" class="list-group-item list-group-item-action"><i class="bi bi-fuel-pump me-2"></i> Encode Weekly Fuel Prices</a>
-                        <a href="{{ route('electricity-consumptions.create') }}" class="list-group-item list-group-item-action"><i class="bi bi-lightning-charge me-2"></i> Encode Electricity Consumption</a>
-                        <a href="{{ route('fuel-vehicle-uses.create') }}" class="list-group-item list-group-item-action"><i class="bi bi-truck me-2"></i> Encode Fuel and Vehicle Use</a>
-                        <a href="{{ route('solar-performances.create') }}" class="list-group-item list-group-item-action"><i class="bi bi-sun me-2"></i> Encode Solar Performance</a>
-                        <a href="{{ route('reports.index') }}" class="list-group-item list-group-item-action"><i class="bi bi-printer me-2"></i> Generate Monthly Report</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="portal-panel">
-                <div class="portal-panel-header">
-                    <div class="title"><i class="bi bi-info-circle"></i> Monthly Briefing Summary</div>
-                    <span class="text-muted">-</span>
-                </div>
-                <div class="portal-panel-body">
-                    <table class="table table-sm align-middle">
-                        <tbody>
-                            <tr>
-                                <th>Highest-consuming building</th>
-                                <td>{{ $summary['highestBuilding']['label'] }} ({{ number_format($summary['highestBuilding']['value'], 2) }} kWh)</td>
-                            </tr>
-                            <tr>
-                                <th>Highest fuel price</th>
-                                <td>{{ number_format($summary['highestFuelPrice'] ?? 0, 2) }}</td>
-                            </tr>
-                            <tr>
-                                <th>Lowest fuel price</th>
-                                <td>{{ number_format($summary['lowestFuelPrice'] ?? 0, 2) }}</td>
-                            </tr>
-                            <tr>
-                                <th>Student transactions</th>
-                                <td>{{ number_format($summary['totalServiceTransactions']) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="portal-panel">
-                <div class="portal-panel-header">
-                    <div class="title"><i class="bi bi-cash-coin"></i> Savings Categories</div>
-                    <span class="text-muted">-</span>
-                </div>
-                <div class="portal-panel-body chart-box">
-                    <canvas id="savingsChart"></canvas>
-                </div>
-            </div>
-
-            <div class="portal-panel">
-                <div class="portal-panel-header">
-                    <div class="title"><i class="bi bi-truck"></i> Fuel and Vehicle Use</div>
-                    <span class="text-muted">-</span>
-                </div>
-                <div class="portal-panel-body">
-                    <table class="table table-sm align-middle">
-                        <tbody>
-                            <tr>
-                                <th>Total fuel cost incurred</th>
-                                <td>{{ number_format($summary['totalFuelCostIncurred'] ?? 0, 2) }}</td>
-                            </tr>
-                            <tr>
-                                <th>Submitted records</th>
-                                <td>{{ number_format($summary['fuelVehicleCount']) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 @endsection
 
 @push('scripts')
 <script>
-    const portalColors = ['#073f8f', '#19bceb', '#ffc107', '#0f8b4c', '#d9534f', '#6f42c1'];
+    const chartConfigs = @json($charts);
 
-    function renderChart(id, type, labels, datasets, options = {}) {
-        const element = document.getElementById(id);
-        if (!element) return;
-        new Chart(element, {
-            type,
-            data: { labels, datasets },
+    function getFilteredDatasets(config, selectedGroup) {
+        if (! config.filterOptions) {
+            return config.datasets;
+        }
+
+        if (! selectedGroup || selectedGroup === 'all-gas' || selectedGroup === 'all-diesel') {
+            return config.datasets;
+        }
+
+        return config.datasets.filter(dataset => dataset.filterGroup === selectedGroup);
+    }
+
+    function renderChart(config) {
+        const element = document.getElementById(config.id);
+        if (! element) return;
+
+        const select = document.querySelector(`[data-chart-filter="${config.id}"]`);
+        const selectedFilter = select ? select.value : 'all';
+        const filteredDatasets = getFilteredDatasets(config, selectedFilter);
+
+        if (config.chartInstance) {
+            config.chartInstance.destroy();
+        }
+
+        config.chartInstance = new Chart(element, {
+            type: config.type,
+            data: {
+                labels: config.labels,
+                datasets: filteredDatasets
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
-                ...options
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                ...(config.options || {})
             }
         });
+
+        if (select) {
+            select.addEventListener('change', () => {
+                const nextFilter = select.value;
+                const nextDatasets = getFilteredDatasets(config, nextFilter);
+
+                if (config.chartInstance) {
+                    config.chartInstance.destroy();
+                }
+
+                config.chartInstance = new Chart(element, {
+                    type: config.type,
+                    data: {
+                        labels: config.labels,
+                        datasets: nextDatasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        ...(config.options || {})
+                    }
+                });
+            });
+        }
     }
 
-    renderChart('fuelChart', 'line', @json($charts['fuelLabels']), [
-        { label: 'Diesel average', data: @json($charts['dieselAverages']), borderColor: '#073f8f', backgroundColor: 'rgba(7,63,143,.12)', tension: .25 },
-        { label: 'Gasoline average', data: @json($charts['gasolineAverages']), borderColor: '#19bceb', backgroundColor: 'rgba(25,188,235,.12)', tension: .25 },
-        { label: 'Shell Fuel Save Diesel', data: @json($charts['shellDiesel']), borderColor: '#ffc107', backgroundColor: 'rgba(255,193,7,.12)', tension: .25 },
-        { label: 'Petron Diesel MAX', data: @json($charts['petronDiesel']), borderColor: '#d9534f', backgroundColor: 'rgba(217,83,79,.12)', tension: .25 },
-        { label: 'Caltex Diesel', data: @json($charts['caltexDiesel']), borderColor: '#0f8b4c', backgroundColor: 'rgba(15,139,76,.12)', tension: .25 },
-        { label: 'Shell Fuel Save Regular', data: @json($charts['shellRegular']), borderColor: '#6f42c1', backgroundColor: 'rgba(111,66,193,.12)', tension: .25 }
-    ]);
-
-    renderChart('campusChart', 'bar', @json($charts['electricityCampusLabels']), [
-        { label: 'Campus kWh', data: @json($charts['electricityCampusValues']), backgroundColor: portalColors }
-    ]);
-
-    renderChart('buildingChart', 'bar', @json($charts['buildingLabels']), [
-        { label: 'Building kWh', data: @json($charts['buildingValues']), backgroundColor: '#19bceb' }
-    ], { indexAxis: 'y' });
-
-    renderChart('electricityTrendChart', 'line', @json($charts['electricityTrendLabels']), [
-        { label: 'Monthly kWh', data: @json($charts['electricityTrendValues']), borderColor: '#073f8f', backgroundColor: 'rgba(7,63,143,.12)', tension: .25 }
-    ]);
-
-    renderChart('solarChart', 'bar', @json($charts['solarPanelLabels']), [
-        { label: 'Solar generated kWh', data: @json($charts['solarPanelValues']), backgroundColor: '#ffc107' }
-    ]);
-
-    renderChart('serviceChart', 'bar', @json($charts['serviceOfficeLabels']), [
-        { label: 'Student transactions', data: @json($charts['serviceOfficeValues']), backgroundColor: '#0f8b4c' }
-    ]);
-
-    renderChart('savingsChart', 'doughnut', @json($charts['savingsCategoryLabels']), [
-        { label: 'Estimated savings', data: @json($charts['savingsCategoryValues']), backgroundColor: portalColors }
-    ]);
+    chartConfigs.forEach(renderChart);
 </script>
 @endpush

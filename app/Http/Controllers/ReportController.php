@@ -212,7 +212,7 @@ class ReportController extends Controller
     private function narrative(Request $request, string $moduleKey): string
     {
         $period = trim(($request->filled('reporting_month') ? $this->months()[(int) $request->input('reporting_month')] : 'selected month').' '.($request->input('reporting_year') ?: 'selected year'));
-        $module = $moduleKey === 'all' ? 'all dashboard modules' : $this->modules()[$moduleKey]['label'];
+        $module = $moduleKey === 'all' ? 'all report categories' : $this->modules()[$moduleKey]['label'];
 
         return "This report summarizes {$module} for {$period}. Figures are based on submitted records available in the system and are intended to support the monthly brief for the Office of the President and the Core Presidents Council.";
     }
