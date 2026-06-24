@@ -14,7 +14,7 @@ class SolarPerformance extends Model
         'respondent_name',
         'reporting_month',
         'reporting_year',
-        'solar_panel_id',
+        'building_name',
         'monthly_solar_energy_kwh',
         'estimated_savings',
         'remarks',

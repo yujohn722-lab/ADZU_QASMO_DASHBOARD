@@ -80,17 +80,83 @@
 @push('scripts')
 <script>
     const chartConfigs = @json($charts);
+    const pointValueLabels = {
+        id: 'pointValueLabels',
+        afterDatasetsDraw(chart, args, pluginOptions) {
+            if (! pluginOptions.display) return;
+
+            const { ctx } = chart;
+            ctx.save();
+            ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+            ctx.fillStyle = pluginOptions.color || '#1f2937';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                const meta = chart.getDatasetMeta(datasetIndex);
+                if (meta.hidden) return;
+
+                meta.data.forEach((point, index) => {
+                    const rawValue = dataset.data[index];
+                    const value = typeof rawValue === 'object' ? rawValue.y : rawValue;
+                    if (value === null || value === undefined || value === '') return;
+
+                    const numericValue = Number(value);
+                    const label = Number.isFinite(numericValue)
+                        ? numericValue.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                        : value;
+
+                    ctx.fillText(label, point.x, point.y - 8);
+                });
+            });
+
+            ctx.restore();
+        }
+    };
 
     function getFilteredDatasets(config, selectedGroup) {
         if (! config.filterOptions) {
             return config.datasets;
         }
 
-        if (! selectedGroup || selectedGroup === 'all-gas' || selectedGroup === 'all-diesel') {
+        if (! selectedGroup || selectedGroup === 'all' || selectedGroup.startsWith('all-')) {
             return config.datasets;
         }
 
         return config.datasets.filter(dataset => dataset.filterGroup === selectedGroup);
+    }
+
+    function chartOptions(config) {
+        const configuredOptions = config.options || {};
+        const configuredPlugins = configuredOptions.plugins || {};
+
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            ...configuredOptions,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                ...configuredPlugins,
+                pointValueLabels: {
+                    display: Boolean(config.showPointLabels),
+                    ...(configuredPlugins.pointValueLabels || {})
+                }
+            }
+        };
+    }
+
+    function createChart(element, config, datasets) {
+        return new Chart(element, {
+            type: config.type,
+            data: {
+                labels: config.labels,
+                datasets
+            },
+            options: chartOptions(config),
+            plugins: [pointValueLabels]
+        });
     }
 
     function renderChart(config) {
@@ -105,23 +171,7 @@
             config.chartInstance.destroy();
         }
 
-        config.chartInstance = new Chart(element, {
-            type: config.type,
-            data: {
-                labels: config.labels,
-                datasets: filteredDatasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                },
-                ...(config.options || {})
-            }
-        });
+        config.chartInstance = createChart(element, config, filteredDatasets);
 
         if (select) {
             select.addEventListener('change', () => {
@@ -132,23 +182,7 @@
                     config.chartInstance.destroy();
                 }
 
-                config.chartInstance = new Chart(element, {
-                    type: config.type,
-                    data: {
-                        labels: config.labels,
-                        datasets: nextDatasets
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        },
-                        ...(config.options || {})
-                    }
-                });
+                config.chartInstance = createChart(element, config, nextDatasets);
             });
         }
     }

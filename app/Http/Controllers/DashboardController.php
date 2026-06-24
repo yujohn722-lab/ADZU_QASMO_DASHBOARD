@@ -281,26 +281,108 @@ class DashboardController extends Controller
             ->get();
 
         $monthlyCosts = $this->monthlyTrend($fuelVehicles, fn ($record) => (float) $record->total_fuel_cost_incurred);
+        $monthlyLiters = $this->monthlyTrend($fuelVehicles, fn ($record) => (float) $record->total_fuel_liters_loaded);
+        $monthlyLabels = $monthlyCosts->keys()->merge($monthlyLiters->keys())->unique()->values();
+        $latestRecord = $fuelVehicles
+            ->sortByDesc(fn (FuelVehicleUse $record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
+            ->first();
+        $latestMonthLabel = $latestRecord
+            ? $latestRecord->reporting_year.' '.$this->monthName((int) $latestRecord->reporting_month)
+            : 'No data';
+        $latestMonthKey = $latestRecord
+            ? $latestRecord->reporting_year.'-'.$this->monthName((int) $latestRecord->reporting_month)
+            : null;
+        $costPerLiter = $monthlyLabels->map(function (string $label) use ($monthlyCosts, $monthlyLiters) {
+            $liters = (float) ($monthlyLiters[$label] ?? 0);
+
+            return $liters > 0 ? round((float) ($monthlyCosts[$label] ?? 0) / $liters, 2) : 0;
+        });
 
         return [
             'pageTitle' => 'Fuel and Vehicle Use',
             'pageIcon' => 'bi-truck',
-            'description' => 'Fuel and vehicle cost graphs by reporting month.',
+            'description' => 'Monthly fleet fuel cost and liters pumped graphs.',
             'createRoute' => route('fuel-vehicle-uses.create'),
             'recordsRoute' => route('fuel-vehicle-uses.index'),
             'metrics' => [
-                ['label' => 'Total fuel cost incurred', 'value' => $this->formatDecimal($fuelVehicles->sum(fn ($record) => (float) $record->total_fuel_cost_incurred)), 'hint' => 'Across visible records'],
-                ['label' => 'Submitted records', 'value' => number_format($fuelVehicles->count()), 'hint' => 'Fuel and vehicle use reports'],
+                ['label' => 'Reporting month', 'value' => $latestMonthLabel, 'hint' => 'Latest submitted period'],
+                ['label' => 'Total cost for the month', 'value' => $this->formatDecimal($latestMonthKey ? ($monthlyCosts[$latestMonthKey] ?? 0) : 0), 'hint' => 'PHP'],
+                ['label' => 'Total liters pumped', 'value' => $this->formatDecimal($latestMonthKey ? ($monthlyLiters[$latestMonthKey] ?? 0) : 0), 'hint' => 'Liters']
+                
             ],
-            'charts' => [[
-                'id' => 'fuelVehicleCostChart',
-                'title' => 'Monthly Fuel Cost Incurred',
-                'icon' => 'bi-cash-stack',
-                'type' => 'bar',
-                'labels' => $monthlyCosts->keys()->values(),
-                'datasets' => [$this->barDataset('Total fuel cost incurred', $monthlyCosts->values(), '#d9534f')],
-                'wide' => true,
-            ]],
+            'charts' => [
+                [
+                    'id' => 'fleetFuelCostTrendChart',
+                    'title' => 'Total Spend vs. Volume Consumption',
+                    'icon' => 'bi-activity',
+                    'type' => 'bar',
+                    'labels' => $monthlyLabels,
+                    'datasets' => [
+                        [
+                            'type' => 'bar',
+                            'label' => 'Total liters loaded',
+                            'data' => $monthlyLabels->map(fn (string $label) => (float) ($monthlyLiters[$label] ?? 0)),
+                            'backgroundColor' => '#19bceb',
+                            'yAxisID' => 'liters',
+                        ],
+                        [
+                            'type' => 'line',
+                            'label' => 'Total amount spent',
+                            'data' => $monthlyLabels->map(fn (string $label) => (float) ($monthlyCosts[$label] ?? 0)),
+                            'borderColor' => '#d9534f',
+                            'backgroundColor' => $this->transparentColor('#d9534f'),
+                            'tension' => .25,
+                            'yAxisID' => 'cost',
+                        ],
+                    ],
+                    'options' => [
+                        'scales' => [
+                            'cost' => ['type' => 'linear', 'position' => 'left', 'title' => ['display' => true, 'text' => 'Total Cost (PHP)']],
+                            'liters' => ['type' => 'linear', 'position' => 'right', 'title' => ['display' => true, 'text' => 'Total Liters'], 'grid' => ['drawOnChartArea' => false]],
+                        ],
+                    ],
+                    'wide' => true,
+                ],
+                [
+                    'id' => 'fuelCostPerLiterChart',
+                    'title' => 'Average Cost per Liter',
+                    'icon' => 'bi-graph-up-arrow',
+                    'type' => 'line',
+                    'labels' => $monthlyLabels,
+                    'datasets' => [$this->lineDataset('PHP per liter', $costPerLiter, '#0f8b4c')],
+                    'options' => [
+                        'scales' => [
+                            'y' => ['title' => ['display' => true, 'text' => 'PHP / Liter']],
+                        ],
+                    ],
+                ],
+                [
+                    'id' => 'monthlyFuelCostChart',
+                    'title' => 'Monthly Total Fuel Cost',
+                    'icon' => 'bi-cash-stack',
+                    'type' => 'bar',
+                    'labels' => $monthlyLabels,
+                    'datasets' => [$this->barDataset('Total cost (PHP)', $monthlyLabels->map(fn (string $label) => (float) ($monthlyCosts[$label] ?? 0)), '#d9534f')],
+                    'options' => [
+                        'scales' => [
+                            'y' => ['title' => ['display' => true, 'text' => 'PHP']],
+                        ],
+                    ],
+                ],
+                [
+                    'id' => 'monthlyFuelLitersChart',
+                    'title' => 'Monthly Total Liters Pumped',
+                    'icon' => 'bi-fuel-pump',
+                    'type' => 'bar',
+                    'labels' => $monthlyLabels,
+                    'datasets' => [$this->barDataset('Total liters', $monthlyLabels->map(fn (string $label) => (float) ($monthlyLiters[$label] ?? 0)), '#19bceb')],
+                    'options' => [
+                        'scales' => [
+                            'y' => ['title' => ['display' => true, 'text' => 'Liters']],
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
 
@@ -313,9 +395,33 @@ class DashboardController extends Controller
 
         $solarTrend = $this->monthlyTrend($solar, fn ($record) => (float) $record->monthly_solar_energy_kwh);
         $solarSavingsTrend = $this->monthlyTrend($solar, fn ($record) => (float) $record->estimated_savings);
-        $solarByPanel = $solar
-            ->groupBy('solar_panel_id')
-            ->map(fn (Collection $rows) => round($rows->sum('monthly_solar_energy_kwh'), 2));
+
+        $monthlyLabels = $solar
+            ->sortBy(fn ($record) => ($record->reporting_year * 100) + $record->reporting_month)
+            ->map(fn ($record) => $record->reporting_year.' '.$this->monthName((int) $record->reporting_month))
+            ->unique()
+            ->values();
+
+        $solarByBuilding = $solar
+            ->groupBy('building_name')
+            ->mapWithKeys(function (Collection $rows, string $building) use ($monthlyLabels) {
+                $monthlyValues = $monthlyLabels->map(function (string $label) use ($rows) {
+                    return (float) $rows->first(fn ($record) => $record->reporting_year.' '.$this->monthName((int) $record->reporting_month) === $label)?->monthly_solar_energy_kwh ?? 0;
+                });
+
+                return [$building => $monthlyValues];
+            });
+
+        $buildingFilterOptions = $solarByBuilding->keys()->map(fn (string $building) => [
+            'value' => $building,
+            'label' => $building,
+        ])->prepend(['value' => 'all-buildings', 'label' => 'All Buildings'])->values();
+        $latestSolar = $solar
+            ->sortByDesc(fn (SolarPerformance $record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
+            ->first();
+        $currentReportingPeriod = $latestSolar
+            ? $latestSolar->reporting_year.' '.$this->monthName((int) $latestSolar->reporting_month)
+            : 'No data';
 
         return [
             'pageTitle' => 'Solar Savings',
@@ -324,18 +430,39 @@ class DashboardController extends Controller
             'createRoute' => route('solar-performances.create'),
             'recordsRoute' => route('solar-performances.index'),
             'metrics' => [
-                ['label' => 'Solar generated', 'value' => $this->formatDecimal($solar->sum('monthly_solar_energy_kwh')), 'hint' => 'kWh across panels'],
-                ['label' => 'Estimated solar savings', 'value' => $this->formatDecimal($solar->sum('estimated_savings')), 'hint' => 'Across visible records'],
-                ['label' => 'Solar panels tracked', 'value' => number_format($solarByPanel->count()), 'hint' => 'Unique panel IDs'],
+                ['label' => 'Solar generated', 'value' => $this->formatDecimal($solar->sum('monthly_solar_energy_kwh')), 'hint' => 'kWh across buildings'],
+                ['label' => 'Total solar savings', 'value' => $this->formatDecimal($solar->sum('estimated_savings')), 'hint' => 'Across visible records'],
+                ['label' => 'Current reporting period', 'value' => $currentReportingPeriod, 'hint' => 'Latest submitted period'],
             ],
             'charts' => [
                 [
-                    'id' => 'solarPanelChart',
-                    'title' => 'Solar Generated by Panel',
+                    'id' => 'solarBuildingChart',
+                    'title' => 'Solar Performance by Building',
                     'icon' => 'bi-sun',
                     'type' => 'bar',
-                    'labels' => $solarByPanel->keys()->values(),
-                    'datasets' => [$this->barDataset('Solar generated kWh', $solarByPanel->values(), '#ffc107')],
+                    'labels' => $monthlyLabels,
+                    'filterOptions' => $buildingFilterOptions,
+                    'datasets' => $solarByBuilding->map(function (Collection $monthlyValues, string $building) {
+                        $color = match ($building) {
+                            'Ernesto Carretero (FEC) Building' => '#073f8f',
+                            'GS Admin' => '#19bceb',
+                            'Jose Maria Rosauro SJ Hall' => '#ffc107',
+                            'Xavier Hall' => '#0f8b4c',
+                            'College Building' => '#d9534f',
+                            'Jesuit Residence' => '#6f42c1',
+                            default => '#8e44ad',
+                        };
+
+                        return [
+                            'label' => $building,
+                            'data' => $monthlyValues,
+                            'filterGroup' => $building,
+                            'borderColor' => $color,
+                            'backgroundColor' => $color,
+                            'borderWidth' => 1,
+                        ];
+                    })->values(),
+                    'wide' => true,
                 ],
                 [
                     'id' => 'solarTrendChart',
@@ -344,6 +471,9 @@ class DashboardController extends Controller
                     'type' => 'line',
                     'labels' => $solarTrend->keys()->values(),
                     'datasets' => [$this->lineDataset('Monthly kWh', $solarTrend->values(), '#0f8b4c')],
+                    'showPointLabels' => true,
+                    'options' => ['layout' => ['padding' => ['top' => 24]]],
+                    'wide' => true,
                 ],
                 [
                     'id' => 'solarSavingsChart',
@@ -351,7 +481,9 @@ class DashboardController extends Controller
                     'icon' => 'bi-cash-coin',
                     'type' => 'line',
                     'labels' => $solarSavingsTrend->keys()->values(),
-                    'datasets' => [$this->lineDataset('Estimated savings', $solarSavingsTrend->values(), '#073f8f')],
+                    'datasets' => [$this->lineDataset('Total solar savings', $solarSavingsTrend->values(), '#073f8f')],
+                    'showPointLabels' => true,
+                    'options' => ['layout' => ['padding' => ['top' => 24]]],
                     'wide' => true,
                 ],
             ],
@@ -474,7 +606,7 @@ class DashboardController extends Controller
             ->map(fn (Collection $rows) => round($rows->sum($valueResolver), 2));
     }
 
-    private function lineDataset(string $label, mixed $data, string $color): array
+    private function lineDataset(string $label, iterable $data, string $color): array
     {
         return [
             'label' => $label,
@@ -485,7 +617,7 @@ class DashboardController extends Controller
         ];
     }
 
-    private function barDataset(string $label, mixed $data, mixed $color = null): array
+    private function barDataset(string $label, iterable $data, $color = null): array
     {
         return [
             'label' => $label,
