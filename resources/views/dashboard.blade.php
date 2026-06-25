@@ -106,7 +106,13 @@
                         ? numericValue.toLocaleString(undefined, { maximumFractionDigits: 2 })
                         : value;
 
-                    ctx.fillText(label, point.x, point.y - 8);
+                    const position = typeof point.tooltipPosition === 'function'
+                        ? point.tooltipPosition()
+                        : { x: point.x, y: point.y };
+                    const isHorizontal = chart.options.indexAxis === 'y';
+                    ctx.textAlign = isHorizontal ? 'left' : 'center';
+                    ctx.textBaseline = isHorizontal ? 'middle' : 'bottom';
+                    ctx.fillText(label, isHorizontal ? position.x + 8 : position.x, isHorizontal ? position.y : position.y - 8);
                 });
             });
 
@@ -140,7 +146,7 @@
                 },
                 ...configuredPlugins,
                 pointValueLabels: {
-                    display: Boolean(config.showPointLabels),
+                    display: Boolean(config.showDataLabels ?? config.showPointLabels),
                     ...(configuredPlugins.pointValueLabels || {})
                 }
             }

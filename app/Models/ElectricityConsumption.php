@@ -9,32 +9,11 @@ class ElectricityConsumption extends Model
 {
     use OwnedByUser;
 
-    public const SALVADOR_FIELDS = [
-        'father_ernesto_carretero_kwh',
-        'canisius_gonzaga_xavier_kwh',
-        'bellarmine_campion_kwh',
-        'senior_high_school_kwh',
-        'sauras_kwh',
-        'college_of_law_kwh',
-        'jesuit_residence_kwh',
-    ];
-
-    public const KREUTZ_FIELDS = [
-        'grade_school_complex_kwh',
-        'junior_high_school_kwh',
-    ];
-
-    public const BUILDING_LABELS = [
-        'father_ernesto_carretero_kwh' => 'Father Ernesto Carretero Building',
-        'canisius_gonzaga_xavier_kwh' => 'Canisius-Gonzaga Building and Xavier Hall',
-        'bellarmine_campion_kwh' => 'Bellarmine Campion Building',
-        'senior_high_school_kwh' => 'Senior High School Building',
-        'sauras_kwh' => 'Sauras Building',
-        'college_of_law_kwh' => 'College of Law Building',
-        'jesuit_residence_kwh' => 'Jesuit Residence',
-        'grade_school_complex_kwh' => 'Grade School Complex',
-        'junior_high_school_kwh' => 'Junior High School Building',
-        'total_lantaka_kwh' => 'Lantaka Campus',
+    public const CAMPUS_FIELDS = [
+        'main_kwh' => 'Main',
+        'fws_kwh' => 'FWS',
+        'total_kreutz_kwh' => 'Kreutz',
+        'total_lantaka_kwh' => 'Lantaka',
     ];
 
     protected $fillable = [
@@ -42,6 +21,8 @@ class ElectricityConsumption extends Model
         'respondent_name',
         'reporting_month',
         'reporting_year',
+        'main_kwh',
+        'fws_kwh',
         'father_ernesto_carretero_kwh',
         'canisius_gonzaga_xavier_kwh',
         'bellarmine_campion_kwh',
@@ -60,6 +41,8 @@ class ElectricityConsumption extends Model
     protected $casts = [
         'reporting_month' => 'integer',
         'reporting_year' => 'integer',
+        'main_kwh' => 'decimal:2',
+        'fws_kwh' => 'decimal:2',
         'father_ernesto_carretero_kwh' => 'decimal:2',
         'canisius_gonzaga_xavier_kwh' => 'decimal:2',
         'bellarmine_campion_kwh' => 'decimal:2',
@@ -76,8 +59,23 @@ class ElectricityConsumption extends Model
 
     public function totalKwh(): float
     {
-        return (float) ($this->total_salvador_kwh ?? 0)
+        return (float) ($this->main_kwh ?? 0)
+            + (float) ($this->fws_kwh ?? $this->total_salvador_kwh ?? 0)
             + (float) ($this->total_kreutz_kwh ?? 0)
             + (float) ($this->total_lantaka_kwh ?? 0);
+    }
+
+    public function campusKwh(string $field): float
+    {
+        if ($field === 'fws_kwh') {
+            return (float) ($this->fws_kwh ?? $this->total_salvador_kwh ?? 0);
+        }
+
+        return (float) ($this->{$field} ?? 0);
+    }
+
+    public function getFwsKwhAttribute($value): ?string
+    {
+        return $value ?? $this->attributes['total_salvador_kwh'] ?? null;
     }
 }

@@ -12,6 +12,7 @@ class FuelPrice extends Model
     public const DIESEL_FIELDS = [
         'shell_fuel_save_diesel',
         'shell_v_power_diesel',
+        'petron_ado',
         'petron_diesel_max',
         'petron_turbo_diesel',
         'caltex_diesel',
@@ -20,7 +21,6 @@ class FuelPrice extends Model
     public const GASOLINE_FIELDS = [
         'shell_fuel_save_regular',
         'shell_v_power_premium',
-        'shell_v_power_premium_sport',
         'petron_xtra_advance_regular',
         'petron_xcs_premium',
         'caltex_silver_regular',
@@ -38,6 +38,7 @@ class FuelPrice extends Model
         'shell_fuel_save_regular',
         'shell_v_power_premium',
         'shell_v_power_premium_sport',
+        'petron_ado',
         'petron_diesel_max',
         'petron_turbo_diesel',
         'petron_xtra_advance_regular',
@@ -57,6 +58,7 @@ class FuelPrice extends Model
         'shell_fuel_save_regular' => 'decimal:2',
         'shell_v_power_premium' => 'decimal:2',
         'shell_v_power_premium_sport' => 'decimal:2',
+        'petron_ado' => 'decimal:2',
         'petron_diesel_max' => 'decimal:2',
         'petron_turbo_diesel' => 'decimal:2',
         'petron_xtra_advance_regular' => 'decimal:2',
@@ -92,6 +94,92 @@ class FuelPrice extends Model
             ->filter(fn ($value) => $value !== null);
 
         return $values->isEmpty() ? null : (float) $values->min();
+    }
+
+    public function highestGasolineInfo(): ?array
+    {
+        $fieldLabels = $this->getFuelFieldLabels();
+        $highest = null;
+        $highestField = null;
+
+        foreach (self::GASOLINE_FIELDS as $field) {
+            $value = $this->{$field};
+            if ($value !== null && ($highest === null || $value > $highest)) {
+                $highest = $value;
+                $highestField = $field;
+            }
+        }
+
+        return $highest !== null ? ['brand' => $fieldLabels[$highestField], 'price' => $highest] : null;
+    }
+
+    public function lowestGasolineInfo(): ?array
+    {
+        $fieldLabels = $this->getFuelFieldLabels();
+        $lowest = null;
+        $lowestField = null;
+
+        foreach (self::GASOLINE_FIELDS as $field) {
+            $value = $this->{$field};
+            if ($value !== null && ($lowest === null || $value < $lowest)) {
+                $lowest = $value;
+                $lowestField = $field;
+            }
+        }
+
+        return $lowest !== null ? ['brand' => $fieldLabels[$lowestField], 'price' => $lowest] : null;
+    }
+
+    public function highestDieselInfo(): ?array
+    {
+        $fieldLabels = $this->getFuelFieldLabels();
+        $highest = null;
+        $highestField = null;
+
+        foreach (self::DIESEL_FIELDS as $field) {
+            $value = $this->{$field};
+            if ($value !== null && ($highest === null || $value > $highest)) {
+                $highest = $value;
+                $highestField = $field;
+            }
+        }
+
+        return $highest !== null ? ['brand' => $fieldLabels[$highestField], 'price' => $highest] : null;
+    }
+
+    public function lowestDieselInfo(): ?array
+    {
+        $fieldLabels = $this->getFuelFieldLabels();
+        $lowest = null;
+        $lowestField = null;
+
+        foreach (self::DIESEL_FIELDS as $field) {
+            $value = $this->{$field};
+            if ($value !== null && ($lowest === null || $value < $lowest)) {
+                $lowest = $value;
+                $lowestField = $field;
+            }
+        }
+
+        return $lowest !== null ? ['brand' => $fieldLabels[$lowestField], 'price' => $lowest] : null;
+    }
+
+    private function getFuelFieldLabels(): array
+    {
+        return [
+            'shell_fuel_save_diesel' => 'Shell Fuel Save Diesel',
+            'shell_v_power_diesel' => 'Shell VPower Diesel',
+            'shell_fuel_save_regular' => 'Shell Fuel Save Gasoline',
+            'shell_v_power_premium' => 'Shell VPower Gasoline',
+            'petron_ado' => 'Petron ADO',
+            'petron_diesel_max' => 'Petron Diesel Max',
+            'petron_turbo_diesel' => 'Petron Turbo Diesel',
+            'petron_xtra_advance_regular' => 'Petron XTRA Gasoline',
+            'petron_xcs_premium' => 'Petron XCS',
+            'caltex_silver_regular' => 'Caltex Silver',
+            'caltex_platinum_premium' => 'Caltex Platinum',
+            'caltex_diesel' => 'Caltex Diesel',
+        ];
     }
 
     private function averageFields(array $fields): ?float

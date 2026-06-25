@@ -18,6 +18,17 @@
             @continue
         @endif
 
+        @if ($type === 'solar_building_inputs')
+            <div class="{{ $field['col'] ?? 'col-12' }}">
+                <label class="form-label">{{ $field['label'] ?? 'Building solar entries' }}</label>
+                @include('modules.partials._solar_building_inputs')
+                @error('solar_buildings')
+                    <div class="text-danger small mt-2">{{ $message }}</div>
+                @enderror
+            </div>
+            @continue
+        @endif
+
         @php
             $name = $field['name'];
             $value = old($name, $record->{$name} ?? '');

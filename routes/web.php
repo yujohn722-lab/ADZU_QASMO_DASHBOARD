@@ -12,6 +12,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportReviewController;
 use App\Http\Controllers\SolarPerformanceController;
 use App\Http\Controllers\StudentServiceVolumeController;
+use App\Http\Controllers\WaterBillController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -33,6 +34,7 @@ Route::middleware(['auth', 'no-cache'])->group(function () {
     Route::resource('solar-performances', SolarPerformanceController::class);
     Route::resource('student-service-volumes', StudentServiceVolumeController::class);
     Route::resource('estimated-savings', EstimatedSavingController::class);
+    Route::resource('water-bills', WaterBillController::class);
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export-csv', [ReportController::class, 'exportCsv'])->name('reports.export-csv');
