@@ -61,7 +61,7 @@
                         <label class="form-label">Campus</label>
                         <select class="form-select" name="campus">
                             <option value="">All</option>
-                            @foreach (['Salvador', 'Kreutz', 'Lantaka'] as $campus)
+                            @foreach (['Main', 'FWS', 'Kreutz', 'Lantaka'] as $campus)
                                 <option value="{{ $campus }}" @selected(request('campus') === $campus)>{{ $campus }}</option>
                             @endforeach
                         </select>

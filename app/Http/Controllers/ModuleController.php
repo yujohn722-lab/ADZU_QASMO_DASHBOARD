@@ -130,13 +130,19 @@ abstract class ModuleController extends Controller
 
         if ($request->filled('campus') && $this->modelClass === \App\Models\ElectricityConsumption::class) {
             $field = match ($request->input('campus')) {
-                'Salvador' => 'total_salvador_kwh',
+                'Main' => 'main_kwh',
+                'FWS' => 'fws_kwh',
                 'Kreutz' => 'total_kreutz_kwh',
                 'Lantaka' => 'total_lantaka_kwh',
                 default => null,
             };
 
-            if ($field) {
+            if ($field === 'fws_kwh') {
+                $query->where(function ($inner) {
+                    $inner->where('fws_kwh', '>', 0)
+                        ->orWhere('total_salvador_kwh', '>', 0);
+                });
+            } elseif ($field) {
                 $query->where($field, '>', 0);
             }
         }

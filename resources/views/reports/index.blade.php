@@ -36,7 +36,7 @@
                     <label class="form-label">Campus</label>
                     <select class="form-select" name="campus">
                         <option value="">All</option>
-                        @foreach (['Salvador', 'Kreutz', 'Lantaka'] as $campus)
+                        @foreach (['Main', 'FWS', 'Kreutz', 'Lantaka'] as $campus)
                             <option value="{{ $campus }}" @selected(request('campus') === $campus)>{{ $campus }}</option>
                         @endforeach
                     </select>
@@ -148,6 +148,39 @@
 @push('scripts')
 <script>
     const reportChart = @json($chart);
+    const reportValueLabels = {
+        id: 'reportValueLabels',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            ctx.save();
+            ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+            ctx.fillStyle = '#1f2937';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                const meta = chart.getDatasetMeta(datasetIndex);
+                if (meta.hidden) return;
+
+                meta.data.forEach((point, index) => {
+                    const value = dataset.data[index];
+                    if (value === null || value === undefined || value === '') return;
+
+                    const numericValue = Number(value);
+                    const label = Number.isFinite(numericValue)
+                        ? numericValue.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                        : value;
+                    const position = typeof point.tooltipPosition === 'function'
+                        ? point.tooltipPosition()
+                        : { x: point.x, y: point.y };
+
+                    ctx.fillText(label, position.x, position.y - 8);
+                });
+            });
+
+            ctx.restore();
+        }
+    };
     const chartElement = document.getElementById('reportChart');
     if (chartElement && reportChart.labels.length) {
         new Chart(chartElement, {
@@ -164,8 +197,10 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: { top: 24 } },
                 plugins: { legend: { position: 'bottom' } }
-            }
+            },
+            plugins: [reportValueLabels]
         });
     }
 </script>

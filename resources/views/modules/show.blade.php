@@ -69,6 +69,19 @@
                                 @continue
                             @endif
 
+                            @if (($field['type'] ?? null) === 'solar_building_inputs')
+                                <tr>
+                                    <th style="width: 34%;">{{ $field['label'] ?? 'Building solar entries' }}</th>
+                                    <td>
+                                        @php
+                                            $readonlySolarBuildingInputs = true;
+                                        @endphp
+                                        @include('modules.partials._solar_building_inputs')
+                                    </td>
+                                </tr>
+                                @continue
+                            @endif
+
                             @php
                                 $name = $field['name'];
                                 $value = $record->{$name};

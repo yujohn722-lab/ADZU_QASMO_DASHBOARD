@@ -85,13 +85,19 @@ class ReportController extends Controller
 
         if ($request->filled('campus') && $module['model'] === ElectricityConsumption::class) {
             $field = match ($request->input('campus')) {
-                'Salvador' => 'total_salvador_kwh',
+                'Main' => 'main_kwh',
+                'FWS' => 'fws_kwh',
                 'Kreutz' => 'total_kreutz_kwh',
                 'Lantaka' => 'total_lantaka_kwh',
                 default => null,
             };
 
-            if ($field) {
+            if ($field === 'fws_kwh') {
+                $query->where(function ($inner) {
+                    $inner->where('fws_kwh', '>', 0)
+                        ->orWhere('total_salvador_kwh', '>', 0);
+                });
+            } elseif ($field) {
                 $query->where($field, '>', 0);
             }
         }
@@ -173,13 +179,14 @@ class ReportController extends Controller
             ],
             'electricity-consumptions' => [
                 'type' => 'bar',
-                'labels' => ['Salvador', 'Kreutz', 'Lantaka'],
+                'labels' => ['Main', 'FWS', 'Kreutz', 'Lantaka'],
                 'datasets' => [[
                     'label' => 'kWh',
                     'data' => [
-                        round($records->sum('total_salvador_kwh'), 2),
-                        round($records->sum('total_kreutz_kwh'), 2),
-                        round($records->sum('total_lantaka_kwh'), 2),
+                        round($records->sum(fn ($record) => $record->campusKwh('main_kwh')), 2),
+                        round($records->sum(fn ($record) => $record->campusKwh('fws_kwh')), 2),
+                        round($records->sum(fn ($record) => $record->campusKwh('total_kreutz_kwh')), 2),
+                        round($records->sum(fn ($record) => $record->campusKwh('total_lantaka_kwh')), 2),
                     ],
                 ]],
             ],
@@ -241,9 +248,18 @@ class ReportController extends Controller
                     'reporting_month' => 'Month',
                     'reporting_year' => 'Year',
                     'week_number' => 'Week',
-                    'shell_fuel_save_diesel' => 'Shell Diesel',
-                    'petron_diesel_max' => 'Petron Diesel',
+                    'shell_fuel_save_diesel' => 'Shell Fuel Save Diesel',
+                    'shell_v_power_diesel' => 'Shell VPower Diesel',
+                    'shell_fuel_save_regular' => 'Shell Fuel Save Gasoline',
+                    'shell_v_power_premium' => 'Shell VPower Gasoline',
+                    'petron_xcs_premium' => 'Petron XCS',
+                    'petron_xtra_advance_regular' => 'Petron XTRA',
+                    'petron_ado' => 'Petron ADO',
+                    'petron_turbo_diesel' => 'Petron PTD',
+                    'petron_diesel_max' => 'Petron Diesel Max',
                     'caltex_diesel' => 'Caltex Diesel',
+                    'caltex_platinum_premium' => 'Caltex Platinum',
+                    'caltex_silver_regular' => 'Caltex Silver',
                 ],
             ],
             'electricity-consumptions' => [
@@ -253,7 +269,8 @@ class ReportController extends Controller
                     'respondent_name' => 'Respondent',
                     'reporting_month' => 'Month',
                     'reporting_year' => 'Year',
-                    'total_salvador_kwh' => 'Salvador kWh',
+                    'main_kwh' => 'Main kWh',
+                    'fws_kwh' => 'FWS kWh',
                     'total_kreutz_kwh' => 'Kreutz kWh',
                     'total_lantaka_kwh' => 'Lantaka kWh',
                 ],

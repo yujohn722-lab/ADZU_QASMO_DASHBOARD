@@ -43,10 +43,10 @@ class DatabaseSeeder extends Seeder
     private function seedFuelPrices(User $user): void
     {
         $rows = [
-            [2026, 1, 62.10, 64.85, 63.40, 67.20, 68.15, 61.90, 65.30, 63.75, 66.40, 63.20, 66.90, 62.30],
-            [2026, 2, 62.85, 65.10, 64.15, 67.85, 68.75, 62.35, 65.70, 64.30, 66.95, 63.85, 67.40, 62.80],
-            [2026, 3, 61.70, 64.40, 63.50, 67.15, 68.00, 61.60, 65.05, 63.95, 66.50, 63.35, 67.10, 62.15],
-            [2026, 4, 60.95, 63.80, 62.90, 66.70, 67.55, 60.85, 64.55, 63.10, 65.95, 62.80, 66.40, 61.75],
+            [2026, 1, 62.10, 64.85, 63.40, 67.20, 68.15, 61.80, 61.90, 65.30, 63.75, 66.40, 63.20, 66.90, 62.30],
+            [2026, 2, 62.85, 65.10, 64.15, 67.85, 68.75, 62.25, 62.35, 65.70, 64.30, 66.95, 63.85, 67.40, 62.80],
+            [2026, 3, 61.70, 64.40, 63.50, 67.15, 68.00, 61.50, 61.60, 65.05, 63.95, 66.50, 63.35, 67.10, 62.15],
+            [2026, 4, 60.95, 63.80, 62.90, 66.70, 67.55, 60.75, 60.85, 64.55, 63.10, 65.95, 62.80, 66.40, 61.75],
         ];
 
         foreach ($rows as $row) {
@@ -61,13 +61,14 @@ class DatabaseSeeder extends Seeder
                 'shell_fuel_save_regular' => $row[4],
                 'shell_v_power_premium' => $row[5],
                 'shell_v_power_premium_sport' => $row[6],
-                'petron_diesel_max' => $row[7],
-                'petron_turbo_diesel' => $row[8],
-                'petron_xtra_advance_regular' => $row[9],
-                'petron_xcs_premium' => $row[10],
-                'caltex_silver_regular' => $row[11],
-                'caltex_platinum_premium' => $row[12],
-                'caltex_diesel' => $row[13],
+                'petron_ado' => $row[7],
+                'petron_diesel_max' => $row[8],
+                'petron_turbo_diesel' => $row[9],
+                'petron_xtra_advance_regular' => $row[10],
+                'petron_xcs_premium' => $row[11],
+                'caltex_silver_regular' => $row[12],
+                'caltex_platinum_premium' => $row[13],
+                'caltex_diesel' => $row[14],
                 'remarks' => 'Weekly price monitoring sample.',
             ]);
         }
@@ -76,33 +77,23 @@ class DatabaseSeeder extends Seeder
     private function seedElectricity(User $user): void
     {
         $rows = [
-            [1, 2026, 10800, 8200, 7450, 6100, 3900, 2500, 1800, 6100, 5400, 4200],
-            [2, 2026, 11200, 8500, 7300, 6350, 4100, 2650, 1900, 6250, 5500, 4050],
-            [3, 2026, 10450, 7900, 7000, 5900, 3700, 2450, 1700, 5980, 5300, 3900],
-            [4, 2026, 9900, 7600, 6820, 5700, 3500, 2300, 1650, 5700, 5100, 3725],
+            [1, 2026, 10800, 8200, 11500, 4200],
+            [2, 2026, 11200, 8500, 11750, 4050],
+            [3, 2026, 10450, 7900, 11280, 3900],
+            [4, 2026, 9900, 7600, 10800, 3725],
         ];
 
         foreach ($rows as $row) {
-            $salvador = array_sum(array_slice($row, 2, 7));
-            $kreutz = $row[9] + $row[10];
-
             ElectricityConsumption::create([
                 'user_id' => $user->id,
                 'respondent_name' => $user->name,
                 'reporting_month' => $row[0],
                 'reporting_year' => $row[1],
-                'father_ernesto_carretero_kwh' => $row[2],
-                'canisius_gonzaga_xavier_kwh' => $row[3],
-                'bellarmine_campion_kwh' => $row[4],
-                'senior_high_school_kwh' => $row[5],
-                'sauras_kwh' => $row[6],
-                'college_of_law_kwh' => $row[7],
-                'jesuit_residence_kwh' => $row[8],
-                'total_salvador_kwh' => $salvador,
-                'grade_school_complex_kwh' => $row[9],
-                'junior_high_school_kwh' => $row[10],
-                'total_kreutz_kwh' => $kreutz,
-                'total_lantaka_kwh' => $row[11],
+                'main_kwh' => $row[2],
+                'fws_kwh' => $row[3],
+                'total_salvador_kwh' => $row[3],
+                'total_kreutz_kwh' => $row[4],
+                'total_lantaka_kwh' => $row[5],
                 'remarks' => 'Monthly campus consumption sample.',
             ]);
         }
@@ -148,7 +139,7 @@ class DatabaseSeeder extends Seeder
 
     private function seedSolar(User $user): void
     {
-        foreach ([['Ernesto Carretero (FEC) Building', 1, 2450, 36750], ['College Building', 2, 2580, 38700], ['Ernesto Carretero (FEC) Building', 3, 2390, 35850], ['College Building', 4, 2700, 40500]] as $row) {
+        foreach ([['Fr.Ernesto Carretero (FEC) Building', 1, 2450, 36750], ['College Building', 2, 2580, 38700], ['Fr.Ernesto Carretero (FEC) Building', 3, 2390, 35850], ['College Building', 4, 2700, 40500]] as $row) {
             SolarPerformance::create([
                 'user_id' => $user->id,
                 'respondent_name' => $user->name,

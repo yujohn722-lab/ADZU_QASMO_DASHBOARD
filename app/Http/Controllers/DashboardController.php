@@ -8,6 +8,7 @@ use App\Models\FuelPrice;
 use App\Models\FuelVehicleUse;
 use App\Models\SolarPerformance;
 use App\Models\StudentServiceVolume;
+use App\Models\WaterBill;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -29,6 +30,7 @@ class DashboardController extends Controller
             'solar' => $this->solarData($request),
             'student-services' => $this->studentServicesData($request),
             'estimated-savings' => $this->estimatedSavingsData($request),
+            'water-bills' => $this->waterBillsData($request),
             default => $this->fuelPricesData($request),
         };
 
@@ -47,6 +49,7 @@ class DashboardController extends Controller
             'solar' => ['label' => 'Solar Savings', 'icon' => 'bi-sun'],
             'student-services' => ['label' => 'Student Service Volume', 'icon' => 'bi-people'],
             'estimated-savings' => ['label' => 'Estimated Savings', 'icon' => 'bi-cash-coin'],
+            'water-bills' => ['label' => 'Water Consumption', 'icon' => 'bi-droplet'],
         ];
     }
 
@@ -69,10 +72,10 @@ class DashboardController extends Controller
             'createRoute' => route('fuel-prices.create'),
             'recordsRoute' => route('fuel-prices.index'),
             'metrics' => [
-                ['label' => 'Latest diesel average', 'value' => $this->formatDecimal($latestFuel?->averageDieselPrice()), 'hint' => 'Latest submitted week'],
-                ['label' => 'Latest gasoline average', 'value' => $this->formatDecimal($latestFuel?->averageGasolinePrice()), 'hint' => 'Latest submitted week'],
-                ['label' => 'Highest fuel price', 'value' => $this->formatDecimal($latestFuel?->highestPrice()), 'hint' => 'From latest weekly record'],
-                ['label' => 'Lowest fuel price', 'value' => $this->formatDecimal($latestFuel?->lowestPrice()), 'hint' => 'From latest weekly record'],
+                ['label' => 'Highest gasoline', 'value' => '₱' . ($latestFuel ? $this->formatDecimal($latestFuel->highestGasolineInfo()['price'] ?? 0) : '0.00'), 'hint' => ($latestFuel?->highestGasolineInfo()['brand'] ?? 'N/A') . ' - ' . ($latestFuel ? $latestFuel->reporting_year . ' ' . $this->monthName((int) $latestFuel->reporting_month) . ' W' . $latestFuel->week_number : 'N/A')],
+                ['label' => 'Lowest gasoline', 'value' => '₱' . ($latestFuel ? $this->formatDecimal($latestFuel->lowestGasolineInfo()['price'] ?? 0) : '0.00'), 'hint' => ($latestFuel?->lowestGasolineInfo()['brand'] ?? 'N/A') . ' - ' . ($latestFuel ? $latestFuel->reporting_year . ' ' . $this->monthName((int) $latestFuel->reporting_month) . ' W' . $latestFuel->week_number : 'N/A')],
+                ['label' => 'Highest diesel', 'value' => '₱' . ($latestFuel ? $this->formatDecimal($latestFuel->highestDieselInfo()['price'] ?? 0) : '0.00'), 'hint' => ($latestFuel?->highestDieselInfo()['brand'] ?? 'N/A') . ' - ' . ($latestFuel ? $latestFuel->reporting_year . ' ' . $this->monthName((int) $latestFuel->reporting_month) . ' W' . $latestFuel->week_number : 'N/A')],
+                ['label' => 'Lowest diesel', 'value' => '₱' . ($latestFuel ? $this->formatDecimal($latestFuel->lowestDieselInfo()['price'] ?? 0) : '0.00'), 'hint' => ($latestFuel?->lowestDieselInfo()['brand'] ?? 'N/A') . ' - ' . ($latestFuel ? $latestFuel->reporting_year . ' ' . $this->monthName((int) $latestFuel->reporting_month) . ' W' . $latestFuel->week_number : 'N/A')],
             ],
             'charts' => [
                 [
@@ -85,11 +88,10 @@ class DashboardController extends Controller
                         ['value' => 'all-gas', 'label' => 'All Gas'],
                         ['value' => 'gas-regular', 'label' => 'Gas Regular (91 RON)'],
                         ['value' => 'gas-premium', 'label' => 'Gas Premium (95 RON)'],
-                        ['value' => 'gas-ultra', 'label' => 'Gas Ultra (97+ RON)'],
                     ],
                     'datasets' => [
                         [
-                            'label' => 'Shell FuelSave Gasoline',
+                            'label' => 'Shell Fuel Save Gasoline',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->shell_fuel_save_regular)->values(),
                             'filterGroup' => 'gas-regular',
                             'borderColor' => '#073f8f',
@@ -97,7 +99,7 @@ class DashboardController extends Controller
                             'tension' => .25,
                         ],
                         [
-                            'label' => 'Petron Xtra Advance',
+                            'label' => 'Petron XTRA',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->petron_xtra_advance_regular)->values(),
                             'filterGroup' => 'gas-regular',
                             'borderColor' => '#19bceb',
@@ -105,7 +107,7 @@ class DashboardController extends Controller
                             'tension' => .25,
                         ],
                         [
-                            'label' => 'Caltex Silver 91',
+                            'label' => 'Caltex Silver',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->caltex_silver_regular)->values(),
                             'filterGroup' => 'gas-regular',
                             'borderColor' => '#0f8b4c',
@@ -113,7 +115,7 @@ class DashboardController extends Controller
                             'tension' => .25,
                         ],
                         [
-                            'label' => 'Shell V-Power Gasoline',
+                            'label' => 'Shell VPower Gasoline',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->shell_v_power_premium)->values(),
                             'filterGroup' => 'gas-premium',
                             'borderColor' => '#ffc107',
@@ -129,19 +131,11 @@ class DashboardController extends Controller
                             'tension' => .25,
                         ],
                         [
-                            'label' => 'Caltex Platinum 95',
+                            'label' => 'Caltex Platinum',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->caltex_platinum_premium)->values(),
                             'filterGroup' => 'gas-premium',
                             'borderColor' => '#6f42c1',
                             'backgroundColor' => $this->transparentColor('#6f42c1'),
-                            'tension' => .25,
-                        ],
-                        [
-                            'label' => 'Shell V-Power Racing',
-                            'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->shell_v_power_premium_sport)->values(),
-                            'filterGroup' => 'gas-ultra',
-                            'borderColor' => '#8e44ad',
-                            'backgroundColor' => $this->transparentColor('#8e44ad'),
                             'tension' => .25,
                         ],
                     ],
@@ -160,7 +154,7 @@ class DashboardController extends Controller
                     ],
                     'datasets' => [
                         [
-                            'label' => 'Shell FuelSave Diesel',
+                            'label' => 'Shell Fuel Save Diesel',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->shell_fuel_save_diesel)->values(),
                             'filterGroup' => 'diesel-regular',
                             'borderColor' => '#073f8f',
@@ -176,7 +170,7 @@ class DashboardController extends Controller
                             'tension' => .25,
                         ],
                         [
-                            'label' => 'Caltex Power Diesel',
+                            'label' => 'Caltex Diesel',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->caltex_diesel)->values(),
                             'filterGroup' => 'diesel-regular',
                             'borderColor' => '#0f8b4c',
@@ -184,7 +178,7 @@ class DashboardController extends Controller
                             'tension' => .25,
                         ],
                         [
-                            'label' => 'Shell V-Power Diesel',
+                            'label' => 'Shell VPower Diesel',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->shell_v_power_diesel)->values(),
                             'filterGroup' => 'diesel-premium',
                             'borderColor' => '#ffc107',
@@ -192,11 +186,19 @@ class DashboardController extends Controller
                             'tension' => .25,
                         ],
                         [
-                            'label' => 'Petron Turbo Diesel',
+                            'label' => 'Petron PTD',
                             'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->petron_turbo_diesel)->values(),
                             'filterGroup' => 'diesel-premium',
                             'borderColor' => '#d9534f',
                             'backgroundColor' => $this->transparentColor('#d9534f'),
+                            'tension' => .25,
+                        ],
+                        [
+                            'label' => 'Petron ADO',
+                            'data' => $fuelPrices->map(fn (FuelPrice $record) => (float) $record->petron_ado)->values(),
+                            'filterGroup' => 'diesel-regular',
+                            'borderColor' => '#6f42c1',
+                            'backgroundColor' => $this->transparentColor('#6f42c1'),
                             'tension' => .25,
                         ],
                     ],
@@ -213,34 +215,44 @@ class DashboardController extends Controller
             ->orderBy('reporting_month')
             ->get();
 
-        $electricityCampus = [
-            'Salvador' => round($electricity->sum(fn ($record) => (float) $record->total_salvador_kwh), 2),
-            'Kreutz' => round($electricity->sum(fn ($record) => (float) $record->total_kreutz_kwh), 2),
-            'Lantaka' => round($electricity->sum(fn ($record) => (float) $record->total_lantaka_kwh), 2),
-        ];
+        $latestElectricity = $electricity
+            ->sortByDesc(fn (ElectricityConsumption $record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
+            ->first();
+        $currentReportingPeriod = $latestElectricity
+            ? $latestElectricity->reporting_year.' '.$this->monthName((int) $latestElectricity->reporting_month)
+            : 'No data';
+        $currentElectricity = $latestElectricity
+            ? $electricity->where('reporting_year', $latestElectricity->reporting_year)->where('reporting_month', $latestElectricity->reporting_month)
+            : collect();
 
-        $buildingTotals = collect(ElectricityConsumption::BUILDING_LABELS)
+        $electricityCampus = collect(ElectricityConsumption::CAMPUS_FIELDS)
             ->mapWithKeys(fn (string $label, string $field) => [
-                $label => round($electricity->sum(fn ($record) => (float) $record->{$field}), 2),
-            ])
-            ->filter(fn (float $value) => $value > 0);
+                $label => round($currentElectricity->sum(fn (ElectricityConsumption $record) => $record->campusKwh($field)), 2),
+            ]);
 
-        $highestBuilding = $buildingTotals->isEmpty()
+        $highestCampus = $electricityCampus->filter(fn (float $value) => $value > 0)->isEmpty()
             ? ['label' => 'No data', 'value' => 0]
-            : ['label' => $buildingTotals->sortDesc()->keys()->first(), 'value' => $buildingTotals->max()];
+            : ['label' => $electricityCampus->sortDesc()->keys()->first(), 'value' => $electricityCampus->max()];
 
         $electricityTrend = $this->monthlyTrend($electricity, fn ($record) => $record->totalKwh());
+        $electricityCampusTrendLabels = $electricityTrend->keys()->values();
+        $electricityCampusTrend = collect(ElectricityConsumption::CAMPUS_FIELDS)
+            ->mapWithKeys(function (string $label, string $field) use ($electricity, $electricityCampusTrendLabels) {
+                $trend = $this->monthlyTrend($electricity, fn (ElectricityConsumption $record) => $record->campusKwh($field));
+
+                return [$label => $electricityCampusTrendLabels->map(fn (string $month) => (float) ($trend[$month] ?? 0))];
+            });
 
         return [
             'pageTitle' => 'Electricity Consumption',
             'pageIcon' => 'bi-lightning-charge',
-            'description' => 'Electricity graphs by campus, building, and monthly total.',
+            'description' => 'Electricity graphs by campus and monthly total.',
             'createRoute' => route('electricity-consumptions.create'),
             'recordsRoute' => route('electricity-consumptions.index'),
             'metrics' => [
-                ['label' => 'Total electricity consumption', 'value' => $this->formatDecimal(array_sum($electricityCampus)), 'hint' => 'kWh across campuses'],
-                ['label' => 'Highest-consuming building', 'value' => $highestBuilding['label'], 'hint' => $this->formatDecimal($highestBuilding['value']).' kWh'],
-                ['label' => 'Submitted records', 'value' => number_format($electricity->count()), 'hint' => 'Visible electricity reports'],
+                ['label' => 'Total electricity consumed', 'value' => $this->formatDecimal($electricityCampus->sum()), 'hint' => 'kWh for current reporting period'],
+                ['label' => 'Highest-consuming campus', 'value' => $highestCampus['label'], 'hint' => $this->formatDecimal($highestCampus['value']).' kWh'],
+                ['label' => 'Current reporting period', 'value' => $currentReportingPeriod, 'hint' => 'Latest submitted period'],
             ],
             'charts' => [
                 [
@@ -248,17 +260,31 @@ class DashboardController extends Controller
                     'title' => 'Campus Consumption',
                     'icon' => 'bi-buildings',
                     'type' => 'bar',
-                    'labels' => array_keys($electricityCampus),
-                    'datasets' => [$this->barDataset('Campus kWh', array_values($electricityCampus))],
-                ],
-                [
-                    'id' => 'buildingChart',
-                    'title' => 'Building Consumption',
-                    'icon' => 'bi-bar-chart',
-                    'type' => 'bar',
-                    'labels' => $buildingTotals->keys()->values(),
-                    'datasets' => [$this->barDataset('Building kWh', $buildingTotals->values(), '#19bceb')],
-                    'options' => ['indexAxis' => 'y'],
+                    'labels' => $electricityCampus->keys()->values(),
+                    'datasets' => [[
+                        'label' => 'Campus kWh',
+                        'data' => $electricityCampus->values(),
+                        'backgroundColor' => $electricityCampus->keys()->map(function (string $campus) {
+                            return match ($campus) {
+                                'Main' => '#073f8f',
+                                'FWS' => '#d9534f',
+                                'Kreutz' => '#0f8b4c',
+                                'Lantaka' => '#19bceb',
+                                default => '#6f42c1',
+                            };
+                        })->values()->all(),
+                        'borderColor' => '#ffffff',
+                        'borderWidth' => 1,
+                    ]],
+                    'showDataLabels' => true,
+                    'options' => [
+                        'layout' => ['padding' => ['top' => 24]],
+                        'plugins' => [
+                             'legend' => ['display' => false],  // This removes the "Campus kWh" label at the bottom
+                            'tooltip' => ['enabled' => false]
+                            ]
+                        ],
+                    'wide' => true,
                 ],
                 [
                     'id' => 'electricityTrendChart',
@@ -266,7 +292,29 @@ class DashboardController extends Controller
                     'icon' => 'bi-activity',
                     'type' => 'line',
                     'labels' => $electricityTrend->keys()->values(),
-                    'datasets' => [$this->lineDataset('Monthly kWh', $electricityTrend->values(), '#073f8f')],
+                    'filterOptions' => [
+                        ['value' => 'total-electricity', 'label' => 'Total'],
+                        ['value' => 'Main', 'label' => 'Main'],
+                        ['value' => 'FWS', 'label' => 'FWS'],
+                        ['value' => 'Kreutz', 'label' => 'Kreutz'],
+                        ['value' => 'Lantaka', 'label' => 'Lantaka'],
+                        ['value' => 'all-electricity', 'label' => 'All Campuses'],
+                    ],
+                    'datasets' => collect([
+                        array_merge($this->lineDataset('Total kWh', $electricityTrend->values(), '#073f8f'), ['filterGroup' => 'total-electricity']),
+                    ])->merge($electricityCampusTrend->map(function ($values, string $campus) {
+                        $color = match ($campus) {
+                            'Main' => '#19bceb',
+                            'FWS' => '#ffc107',
+                            'Kreutz' => '#0f8b4c',
+                            'Lantaka' => '#d9534f',
+                            default => '#6f42c1',
+                        };
+
+                        return array_merge($this->lineDataset($campus.' kWh', $values, $color), ['filterGroup' => $campus]);
+                    }))->values(),
+                    'showDataLabels' => true,
+                    'options' => ['layout' => ['padding' => ['top' => 24]]],
                     'wide' => true,
                 ],
             ],
@@ -319,13 +367,6 @@ class DashboardController extends Controller
                     'labels' => $monthlyLabels,
                     'datasets' => [
                         [
-                            'type' => 'bar',
-                            'label' => 'Total liters loaded',
-                            'data' => $monthlyLabels->map(fn (string $label) => (float) ($monthlyLiters[$label] ?? 0)),
-                            'backgroundColor' => '#19bceb',
-                            'yAxisID' => 'liters',
-                        ],
-                        [
                             'type' => 'line',
                             'label' => 'Total amount spent',
                             'data' => $monthlyLabels->map(fn (string $label) => (float) ($monthlyCosts[$label] ?? 0)),
@@ -334,6 +375,14 @@ class DashboardController extends Controller
                             'tension' => .25,
                             'yAxisID' => 'cost',
                         ],
+                        [
+                            'type' => 'bar',
+                            'label' => 'Total liters loaded',
+                            'data' => $monthlyLabels->map(fn (string $label) => (float) ($monthlyLiters[$label] ?? 0)),
+                            'backgroundColor' => '#19bceb',
+                            'yAxisID' => 'liters',
+                        ],
+                        
                     ],
                     'options' => [
                         'scales' => [
@@ -341,21 +390,10 @@ class DashboardController extends Controller
                             'liters' => ['type' => 'linear', 'position' => 'right', 'title' => ['display' => true, 'text' => 'Total Liters'], 'grid' => ['drawOnChartArea' => false]],
                         ],
                     ],
+                    'showDataLabels' => true,
                     'wide' => true,
                 ],
-                [
-                    'id' => 'fuelCostPerLiterChart',
-                    'title' => 'Average Cost per Liter',
-                    'icon' => 'bi-graph-up-arrow',
-                    'type' => 'line',
-                    'labels' => $monthlyLabels,
-                    'datasets' => [$this->lineDataset('PHP per liter', $costPerLiter, '#0f8b4c')],
-                    'options' => [
-                        'scales' => [
-                            'y' => ['title' => ['display' => true, 'text' => 'PHP / Liter']],
-                        ],
-                    ],
-                ],
+
                 [
                     'id' => 'monthlyFuelCostChart',
                     'title' => 'Monthly Total Fuel Cost',
@@ -368,6 +406,7 @@ class DashboardController extends Controller
                             'y' => ['title' => ['display' => true, 'text' => 'PHP']],
                         ],
                     ],
+                    'showDataLabels' => true,
                 ],
                 [
                     'id' => 'monthlyFuelLitersChart',
@@ -381,6 +420,7 @@ class DashboardController extends Controller
                             'y' => ['title' => ['display' => true, 'text' => 'Liters']],
                         ],
                     ],
+                    'showDataLabels' => true,
                 ],
             ],
         ];
@@ -444,7 +484,7 @@ class DashboardController extends Controller
                     'filterOptions' => $buildingFilterOptions,
                     'datasets' => $solarByBuilding->map(function (Collection $monthlyValues, string $building) {
                         $color = match ($building) {
-                            'Ernesto Carretero (FEC) Building' => '#073f8f',
+                            'Fr.Ernesto Carretero (FEC) Building' => '#073f8f',
                             'GS Admin' => '#19bceb',
                             'Jose Maria Rosauro SJ Hall' => '#ffc107',
                             'Xavier Hall' => '#0f8b4c',
@@ -462,6 +502,8 @@ class DashboardController extends Controller
                             'borderWidth' => 1,
                         ];
                     })->values(),
+                    'showDataLabels' => true,
+                    'options' => ['layout' => ['padding' => ['top' => 24]]],
                     'wide' => true,
                 ],
                 [
@@ -502,6 +544,12 @@ class DashboardController extends Controller
             ->groupBy('office_unit_name')
             ->map(fn (Collection $rows) => $rows->sum('student_transactions_count'))
             ->sortDesc();
+        $highestTransactionOffice = $serviceByOffice->isEmpty()
+            ? ['name' => 'N/A', 'value' => 0]
+            : ['name' => $serviceByOffice->keys()->first(), 'value' => (int) $serviceByOffice->values()->first()];
+        $lowestTransactionOffice = $serviceByOffice->isEmpty()
+            ? ['name' => 'N/A', 'value' => 0]
+            : ['name' => $serviceByOffice->keys()->last(), 'value' => (int) $serviceByOffice->values()->last()];
 
         return [
             'pageTitle' => 'Student Service Volume',
@@ -511,8 +559,8 @@ class DashboardController extends Controller
             'recordsRoute' => route('student-service-volumes.index'),
             'metrics' => [
                 ['label' => 'Student transactions', 'value' => number_format($services->sum('student_transactions_count')), 'hint' => 'Across visible records'],
-                ['label' => 'Offices/units tracked', 'value' => number_format($serviceByOffice->count()), 'hint' => 'Unique office/unit names'],
-                ['label' => 'Submitted records', 'value' => number_format($services->count()), 'hint' => 'Student service reports'],
+                ['label' => 'Office with highest transaction', 'value' => $highestTransactionOffice['name'], 'hint' => number_format($highestTransactionOffice['value'])],
+                ['label' => 'Office with lowest transaction', 'value' => $lowestTransactionOffice['name'], 'hint' => number_format($lowestTransactionOffice['value'])],
             ],
             'charts' => [
                 [
@@ -602,7 +650,7 @@ class DashboardController extends Controller
     private function monthlyTrend(Collection $records, callable $valueResolver): Collection
     {
         return $records
-            ->groupBy(fn ($record) => $record->reporting_year.'-'.$this->monthName((int) $record->reporting_month))
+            ->groupBy(fn ($record) => $this->monthKey((int) $record->reporting_year, (int) $record->reporting_month))
             ->map(fn (Collection $rows) => round($rows->sum($valueResolver), 2));
     }
 
@@ -659,5 +707,171 @@ class DashboardController extends Controller
             11 => 'Nov',
             12 => 'Dec',
         ][$month] ?? 'N/A';
+    }
+
+    private function monthKey(int $year, int $month): string
+    {
+        return $year.'-'.$this->monthName($month);
+    }
+
+    private function monthLabel(int $year, int $month): string
+    {
+        return $year.' '.$this->monthName($month);
+    }
+
+    private function waterBillsData(Request $request): array
+    {
+        $waterBills = WaterBill::visibleTo($request->user())
+            ->orderBy('reporting_year')
+            ->orderBy('reporting_month')
+            ->get();
+
+        $monthlyPeriods = $waterBills
+            ->sortBy(fn ($record) => ($record->reporting_year * 100) + $record->reporting_month)
+            ->map(fn ($record) => [
+                'key' => $this->monthKey((int) $record->reporting_year, (int) $record->reporting_month),
+                'label' => $this->monthLabel((int) $record->reporting_year, (int) $record->reporting_month),
+            ])
+            ->unique('key')
+            ->values();
+        $monthlyLabels = $monthlyPeriods->pluck('label')->values();
+
+        $facilityTrends = collect(WaterBill::FACILITY_FIELDS)
+            ->mapWithKeys(function (string $label, string $field) use ($waterBills, $monthlyPeriods) {
+                $trend = $this->monthlyTrend($waterBills, fn (WaterBill $record) => (float) ($record->{$field} ?? 0));
+
+                return [$label => $monthlyPeriods->map(fn (array $period) => (float) ($trend[$period['key']] ?? 0))];
+            });
+
+        $latestBills = $waterBills
+            ->sortByDesc(fn (WaterBill $record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
+            ->take(5);
+
+        $last5MonthsTotal = $latestBills->sum(fn (WaterBill $record) => $record->totalBill());
+
+        $latestBill = $waterBills
+            ->sortByDesc(fn (WaterBill $record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
+            ->first();
+
+        $facilityMonthlyData = collect(WaterBill::FACILITY_FIELDS)
+            ->mapWithKeys(function (string $label, string $field) use ($waterBills, $monthlyPeriods) {
+                return [$label => $monthlyPeriods->map(fn (array $period) => (float) ($this->monthlyTrend($waterBills, fn (WaterBill $record) => (float) ($record->{$field} ?? 0))[$period['key']] ?? 0))];
+            });
+
+        $volatilityIndex = $this->calculateVolatilityIndex($facilityMonthlyData);
+
+        $topContributor = $latestBill?->topContributor();
+
+        return [
+            'pageTitle' => 'Water Consumption',
+            'pageIcon' => 'bi-droplet',
+            'description' => 'Water bill charts and consumption summaries by facility.',
+            'createRoute' => route('water-bills.create'),
+            'recordsRoute' => route('water-bills.index'),
+            'metrics' => [
+                ['label' => 'Total (Last 5 months)', 'value' => '₱' . $this->formatDecimal($last5MonthsTotal), 'hint' => 'Sum of all facilities'],
+                ['label' => 'Top contributor', 'value' => $topContributor['facility'] ?? 'N/A', 'hint' => '₱' . ($topContributor ? $this->formatDecimal($topContributor['amount']) : '0.00') . ' - ' . ($latestBill ? $latestBill->reporting_year . ' ' . $this->monthName((int) $latestBill->reporting_month) : 'N/A')],
+                ['label' => 'Most volatile location', 'value' => $volatilityIndex['facility'] ?? 'N/A', 'hint' => 'Volatility Index: ' . ($volatilityIndex['index'] ?? '0.00')],
+            ],
+            'charts' => [
+                [
+                    'id' => 'waterBillTrendChart',
+                    'title' => 'Monthly Water Bill by Facility',
+                    'icon' => 'bi-activity',
+                    'type' => 'line',
+                    'labels' => $monthlyLabels,
+                    'filterOptions' => collect(WaterBill::FACILITY_FIELDS)
+                        ->map(fn (string $label) => ['value' => $label, 'label' => $label])
+                        ->prepend(['value' => 'all-facilities', 'label' => 'All Facilities'])
+                        ->values(),
+                    'datasets' => $facilityTrends->map(function (Collection $values, string $facility) {
+                        $colors = [
+                            'LANTAKA ANNEX A' => '#073f8f',
+                            'LANTAKA OLD 4-ST' => '#19bceb',
+                            'JR KITCHEN' => '#ffc107',
+                            'MAIN' => '#0f8b4c',
+                            'FWS' => '#d9534f',
+                            'PPO Shop' => '#6f42c1',
+                            'AUX/ OLD DORM' => '#8e44ad',
+                        ];
+                        $color = $colors[$facility] ?? '#8e44ad';
+
+                        return array_merge($this->lineDataset($facility, $values, $color), ['filterGroup' => $facility]);
+                    })->values(),
+                    'options' => ['layout' => ['padding' => ['top' => 24]]],
+                    'wide' => true,
+                ],
+                [
+                    'id' => 'waterBillComparisonChart',
+                    'title' => 'Water Bill Comparison by Facility',
+                    'icon' => 'bi-bar-chart',
+                    'type' => 'bar',
+                    'labels' => $monthlyLabels,
+                    'datasets' => $facilityMonthlyData->map(function (Collection $values, string $facility) {
+                        $colors = [
+                            'LANTAKA ANNEX A' => '#073f8f',
+                            'LANTAKA OLD 4-ST' => '#19bceb',
+                            'JR KITCHEN' => '#ffc107',
+                            'MAIN' => '#0f8b4c',
+                            'FWS' => '#d9534f',
+                            'PPO Shop' => '#6f42c1',
+                            'AUX/ OLD DORM' => '#8e44ad',
+                        ];
+                        $color = $colors[$facility] ?? '#8e44ad';
+
+                        return [
+                            'label' => $facility,
+                            'data' => $values,
+                            'backgroundColor' => $color,
+                            'borderColor' => $color,
+                            'borderWidth' => 1,
+                            'filterGroup' => $facility,
+                        ];
+                    })->values(),
+                    'filterOptions' => collect(WaterBill::FACILITY_FIELDS)
+                        ->map(fn (string $label) => ['value' => $label, 'label' => $label])
+                        ->prepend(['value' => 'all-facilities', 'label' => 'All Facilities'])
+                        ->values(),
+                    'options' => ['layout' => ['padding' => ['top' => 24]]],
+                    'wide' => true,
+                ],
+            ],
+        ];
+    }
+
+    private function calculateVolatilityIndex(Collection $facilityData): array
+    {
+        $volatilityScores = [];
+
+        foreach ($facilityData as $facility => $values) {
+            if ($values->count() < 2) {
+                $volatilityScores[$facility] = 0;
+                continue;
+            }
+
+            $values = $values->filter(fn ($v) => $v !== null);
+            if ($values->isEmpty()) {
+                $volatilityScores[$facility] = 0;
+                continue;
+            }
+
+            $mean = $values->avg();
+            if ($mean == 0) {
+                $volatilityScores[$facility] = 0;
+                continue;
+            }
+
+            $variance = $values->map(fn ($v) => pow($v - $mean, 2))->avg();
+            $stdDev = sqrt($variance);
+            $volatilityScores[$facility] = round(($stdDev / $mean) * 100, 2);
+        }
+
+        $maxFacility = collect($volatilityScores)->sortDesc()->first() ?? 0;
+        $topFacility = collect($volatilityScores)->sortDesc()->keys()->first() ?? null;
+
+        return [
+            'facility' => $topFacility,
+            'index' => $maxFacility,
+        ];
     }
 }

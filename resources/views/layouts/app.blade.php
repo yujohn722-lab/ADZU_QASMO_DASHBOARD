@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Energy Crisis Dashboard')</title>
+    <title>@yield('title', 'University Energy Monitoring Dashboard')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -361,6 +361,7 @@
             <a class="nav-link {{ request()->routeIs('solar-performances.*') ? 'active' : '' }}" href="{{ route('solar-performances.index') }}"><i class="bi bi-sun"></i> Solar Savings</a>
             <a class="nav-link {{ request()->routeIs('student-service-volumes.*') ? 'active' : '' }}" href="{{ route('student-service-volumes.index') }}"><i class="bi bi-people"></i> Student Service Volume</a>
             <a class="nav-link {{ request()->routeIs('estimated-savings.*') ? 'active' : '' }}" href="{{ route('estimated-savings.index') }}"><i class="bi bi-cash-coin"></i> Estimated Savings</a>
+            <a class="nav-link {{ request()->routeIs('water-bills.*') ? 'active' : '' }}" href="{{ route('water-bills.index') }}"><i class="bi bi-droplet"></i> Water Consumption</a>
         </nav>
 
         <div class="nav-section">Common Menu</div>
@@ -378,7 +379,7 @@
             <button class="sidebar-toggle" type="button" id="sidebarToggle" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="true" title="Toggle navigation">
                 <i class="bi bi-list fs-4"></i>
             </button>
-            <span class="fw-semibold">Energy Crisis Learning Continuity Dashboard</span>
+            <span class="fw-semibold">University Energy Monitoring Dashboard</span>
         </div>
         <div class="d-flex align-items-center gap-3 small">
             <div class="dropdown">
