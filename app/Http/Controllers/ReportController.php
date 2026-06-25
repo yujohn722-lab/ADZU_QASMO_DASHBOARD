@@ -141,7 +141,8 @@ class ReportController extends Controller
         }
 
         if ($user->canAccessReportType('fuel-vehicle-uses')) {
-            $summary['Total fuel cost incurred (PHP)'] = round($fuelVehicles->sum(fn ($record) => (float) $record->total_fuel_cost_incurred), 2);
+            $summary['Total fuel cost for the month (PHP)'] = round($fuelVehicles->sum(fn ($record) => (float) $record->total_fuel_cost_incurred), 2);
+            $summary['Total liters pumped for the month'] = round($fuelVehicles->sum(fn ($record) => (float) $record->total_fuel_liters_loaded), 2);
         }
 
         if ($user->canAccessReportType('solar-performances')) {
@@ -188,9 +189,14 @@ class ReportController extends Controller
                     ->map(fn ($record) => $record->reporting_year.' '.$this->shortMonthName((int) $record->reporting_month))
                     ->values(),
                 'datasets' => [[
-                    'label' => 'Total fuel cost incurred (PHP)',
+                    'label' => 'Total fuel cost (PHP)',
                     'data' => $records->sortBy(fn ($record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
                         ->map(fn ($record) => (float) $record->total_fuel_cost_incurred)
+                        ->values(),
+                ], [
+                    'label' => 'Total fuel loaded (L)',
+                    'data' => $records->sortBy(fn ($record) => ($record->reporting_year * 100) + (int) $record->reporting_month)
+                        ->map(fn ($record) => (float) $record->total_fuel_liters_loaded)
                         ->values(),
                 ]],
             ],
@@ -296,8 +302,8 @@ class ReportController extends Controller
                     'respondent_name' => 'Respondent',
                     'reporting_month' => 'Month',
                     'reporting_year' => 'Year',
-                    'total_fuel_cost_incurred' => 'Total Fuel Cost Incurred (PHP)',
-                    'remarks' => 'Remarks',
+                    'total_fuel_cost_incurred' => 'Total Fuel Cost for the Month (PHP)',
+                    'total_fuel_liters_loaded' => 'Total Liters Pumped for the Month',
                 ],
             ],
             'solar-performances' => [

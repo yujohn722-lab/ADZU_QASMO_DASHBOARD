@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\ElectricityConsumption;
 use App\Models\EstimatedSaving;
 use App\Models\FuelPrice;
+use App\Models\FuelVehicle;
 use App\Models\FuelVehicleUse;
 use App\Models\SolarPerformance;
 use App\Models\StudentServiceVolume;
@@ -38,6 +39,7 @@ class DatabaseSeeder extends Seeder
 
         $this->seedFuelPrices($respondent);
         $this->seedElectricity($respondent);
+        $this->seedVehicles();
         $this->seedFuelVehicleUse($respondent);
         $this->seedSolar($respondent);
         $this->seedStudentServices($respondent);
@@ -112,6 +114,31 @@ class DatabaseSeeder extends Seeder
         }
     }
 
+    private function seedVehicles(): array
+    {
+        return collect([
+            ['vehicle_name' => 'Dump Truck 1', 'plate_number' => 'JDZ 879', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Dump Truck 2', 'plate_number' => 'KBF 9632', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Grandia', 'plate_number' => 'JDO 4115', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Hi-Ace 130', 'plate_number' => 'JEM 130', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Hilux', 'plate_number' => 'PII 490', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Hino Bus 1', 'plate_number' => 'KAR 5155', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Hino Bus 2', 'plate_number' => 'KAR 5157', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Hino Bus 2', 'plate_number' => 'KAR 5155', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Hyundai Bus 1', 'plate_number' => 'URI 174', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Hyundai Bus 2', 'plate_number' => 'AJA 7163', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Innova', 'plate_number' => 'JAA 12005', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'L300 547', 'plate_number' => 'JCP 547', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Traviz 1', 'plate_number' => 'KAP 9140', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Traviz 2', 'plate_number' => 'KBD 1963', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Urvan 1', 'plate_number' => 'AAW 4847', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Urvan 2', 'plate_number' => 'AFA 5485', 'fuel_type' => 'DIESEL', 'notes' => ''],
+            ['vehicle_name' => 'Wave 100', 'plate_number' => 'JR 8281', 'fuel_type' => 'GASOLINE', 'notes' => ''],
+        ])->mapWithKeys(fn (array $vehicle) => [
+            $vehicle['vehicle_name'].'|'.$vehicle['plate_number'] => FuelVehicle::create($vehicle),
+        ])->all();
+    }
+
     private function seedFuelVehicleUse(User $user): void
     {
         FuelVehicleUse::create([
@@ -119,20 +146,21 @@ class DatabaseSeeder extends Seeder
             'respondent_name' => $user->name,
             'reporting_month' => 4,
             'reporting_year' => 2026,
-            'total_fuel_cost_incurred' => 185000,
+            'total_fuel_cost_incurred' => 2686.43,
+            'total_fuel_liters_loaded' => 45.61,
             'remarks' => 'Monthly fuel cost sample.',
         ]);
     }
 
     private function seedSolar(User $user): void
     {
-        foreach ([['SP-ROOF-01', 1, 2450, 36750], ['SP-ROOF-02', 2, 2580, 38700], ['SP-ROOF-01', 3, 2390, 35850], ['SP-ROOF-02', 4, 2700, 40500]] as $row) {
+        foreach ([['Ernesto Carretero (FEC) Building', 1, 2450, 36750], ['College Building', 2, 2580, 38700], ['Ernesto Carretero (FEC) Building', 3, 2390, 35850], ['College Building', 4, 2700, 40500]] as $row) {
             SolarPerformance::create([
                 'user_id' => $user->id,
                 'respondent_name' => $user->name,
                 'reporting_month' => $row[1],
                 'reporting_year' => 2026,
-                'solar_panel_id' => $row[0],
+                'building_name' => $row[0],
                 'monthly_solar_energy_kwh' => $row[2],
                 'estimated_savings' => $row[3],
                 'remarks' => 'Solar generation sample.',
