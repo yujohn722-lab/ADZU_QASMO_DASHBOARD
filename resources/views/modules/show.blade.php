@@ -8,7 +8,9 @@
             <div class="title"><i class="bi {{ $icon }}"></i> {{ $title }} Details</div>
             <div class="d-flex gap-2 no-print">
                 <a class="btn btn-sm btn-outline-secondary" href="{{ route($routeName.'.index') }}"><i class="bi bi-arrow-left me-1"></i> Back</a>
-                <a class="btn btn-sm btn-primary" href="{{ route($routeName.'.edit', $record) }}"><i class="bi bi-pencil me-1"></i> Edit</a>
+                @if ($record->isOwnedBy(auth()->user()))
+                    <a class="btn btn-sm btn-primary" href="{{ route($routeName.'.edit', $record) }}"><i class="bi bi-pencil me-1"></i> Edit</a>
+                @endif
             </div>
         </div>
         <div class="portal-panel-body">
@@ -90,11 +92,13 @@
                 </table>
             </div>
 
-            <form class="no-print" method="POST" action="{{ route($routeName.'.destroy', $record) }}" onsubmit="return confirm('Delete this record?')">
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash me-1"></i> Delete Record</button>
-            </form>
+            @if ($record->isOwnedBy(auth()->user()))
+                <form class="no-print" method="POST" action="{{ route($routeName.'.destroy', $record) }}" onsubmit="return confirm('Delete this record?')">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash me-1"></i> Delete Record</button>
+                </form>
+            @endif
         </div>
     </div>
 @endsection

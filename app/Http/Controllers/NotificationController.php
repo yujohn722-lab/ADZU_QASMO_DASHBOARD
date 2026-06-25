@@ -19,6 +19,10 @@ class NotificationController extends Controller
             return redirect()->route('dashboard');
         }
 
+        if ($review->module_key === 'responder-approvals') {
+            return redirect()->route('responder-approvals.index');
+        }
+
         return redirect()->route($review->module_key.'.show', $review->reportable_id);
     }
 

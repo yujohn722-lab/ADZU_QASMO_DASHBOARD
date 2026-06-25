@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccountManagementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ElectricityConsumptionController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\FuelVehicleUseController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportReviewController;
+use App\Http\Controllers\ResponderApprovalController;
 use App\Http\Controllers\SolarPerformanceController;
 use App\Http\Controllers\StudentServiceVolumeController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +20,8 @@ Route::middleware('guest')->group(function () {
     Route::get('/', [AuthController::class, 'showLogin'])->name('login');
     Route::get('/login', [AuthController::class, 'showLogin']);
     Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 });
 
 Route::middleware(['auth', 'no-cache'])->group(function () {
@@ -39,4 +43,12 @@ Route::middleware(['auth', 'no-cache'])->group(function () {
 
     Route::get('/account', [AccountController::class, 'edit'])->name('account.edit');
     Route::put('/account', [AccountController::class, 'update'])->name('account.update');
+
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/accounts', [AccountManagementController::class, 'index'])->name('accounts.index');
+        Route::delete('/accounts/{user}', [AccountManagementController::class, 'destroy'])->name('accounts.destroy');
+        Route::get('/responder-approvals', [ResponderApprovalController::class, 'index'])->name('responder-approvals.index');
+        Route::post('/responder-approvals/{user}/approve', [ResponderApprovalController::class, 'approve'])->name('responder-approvals.approve');
+        Route::delete('/responder-approvals/{user}/reject', [ResponderApprovalController::class, 'reject'])->name('responder-approvals.reject');
+    });
 });

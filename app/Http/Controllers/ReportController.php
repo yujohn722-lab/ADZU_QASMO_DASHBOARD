@@ -20,11 +20,12 @@ class ReportController extends Controller
     public function index(Request $request): View
     {
         $moduleKey = $this->validatedModuleKey($request);
-        $module = $moduleKey === 'all' ? null : $this->modules()[$moduleKey];
+        $modules = $this->modules($request);
+        $module = $moduleKey === 'all' ? null : $modules[$moduleKey];
         $records = $module ? $this->filteredQuery($request, $module)->latest()->limit(200)->get() : collect();
 
         return view('reports.index', [
-            'modules' => $this->modules(),
+            'modules' => $modules,
             'selectedModuleKey' => $moduleKey,
             'selectedModule' => $module,
             'records' => $records,
@@ -38,7 +39,8 @@ class ReportController extends Controller
     public function exportCsv(Request $request)
     {
         $moduleKey = $this->validatedModuleKey($request);
-        $module = $moduleKey === 'all' ? null : $this->modules()[$moduleKey];
+        $modules = $this->modules($request);
+        $module = $moduleKey === 'all' ? null : $modules[$moduleKey];
         $records = $module ? $this->filteredQuery($request, $module)->latest()->get() : collect();
         $summary = $this->summary($request);
 
@@ -74,7 +76,7 @@ class ReportController extends Controller
 
     private function filteredQuery(Request $request, array $module): Builder
     {
-        $query = $module['model']::query()->visibleTo($request->user());
+        $query = $module['model']::query();
         $available = array_keys($module['columns']);
 
         foreach (['reporting_month', 'reporting_year', 'respondent_name', 'office_unit_name'] as $filter) {
@@ -102,33 +104,60 @@ class ReportController extends Controller
     private function summary(Request $request): array
     {
         $user = $request->user();
-        $electricity = $this->filterCollection($request, ElectricityConsumption::visibleTo($user)->get());
-        $fuel = FuelPrice::visibleTo($user)
+        $electricity = $user->canAccessReportType('electricity-consumptions')
+            ? $this->filterCollection($request, ElectricityConsumption::query()->get())
+            : collect();
+        $fuel = $user->canAccessReportType('fuel-prices') ? FuelPrice::query()
             ->when($request->filled('reporting_month'), fn ($query) => $query->where('reporting_month', $request->input('reporting_month')))
             ->when($request->filled('reporting_year'), fn ($query) => $query->where('reporting_year', $request->input('reporting_year')))
             ->orderByDesc('reporting_year')
             ->orderByDesc('reporting_month')
             ->orderByDesc('week_number')
-            ->first();
-        $solar = $this->filterCollection($request, SolarPerformance::visibleTo($user)->get());
-        $services = $this->filterCollection($request, StudentServiceVolume::visibleTo($user)->get());
-        $fuelVehicles = $this->filterCollection($request, FuelVehicleUse::visibleTo($user)->get());
-        $savings = EstimatedSaving::visibleTo($user)
+            ->first() : null;
+        $solar = $user->canAccessReportType('solar-performances')
+            ? $this->filterCollection($request, SolarPerformance::query()->get())
+            : collect();
+        $services = $user->canAccessReportType('student-service-volumes')
+            ? $this->filterCollection($request, StudentServiceVolume::query()->get())
+            : collect();
+        $fuelVehicles = $user->canAccessReportType('fuel-vehicle-uses')
+            ? $this->filterCollection($request, FuelVehicleUse::query()->get())
+            : collect();
+        $savings = $user->canAccessReportType('estimated-savings') ? EstimatedSaving::query()
             ->when($request->filled('reporting_year'), fn ($query) => $query->where('reporting_year', $request->input('reporting_year')))
             ->when($request->filled('office_unit_name'), fn ($query) => $query->where('office_unit_name', $request->input('office_unit_name')))
             ->when($request->filled('respondent_name'), fn ($query) => $query->where('respondent_name', $request->input('respondent_name')))
-            ->get();
+            ->get() : collect();
 
-        return [
-            'Total electricity consumption (kWh)' => round($electricity->sum(fn ($record) => $record->totalKwh()), 2),
-            'Latest average diesel price' => $fuel?->averageDieselPrice() ?? 0,
-            'Latest average gasoline price' => $fuel?->averageGasolinePrice() ?? 0,
-            'Total fuel cost incurred (PHP)' => round($fuelVehicles->sum(fn ($record) => (float) $record->total_fuel_cost_incurred), 2),
-            'Total solar energy generated (kWh)' => round($solar->sum('monthly_solar_energy_kwh'), 2),
-            'Estimated solar savings' => round($solar->sum('estimated_savings'), 2),
-            'Student service transactions' => (int) $services->sum('student_transactions_count'),
-            'Total estimated yearly savings' => round($savings->sum('total_estimated_savings'), 2),
-        ];
+        $summary = [];
+
+        if ($user->canAccessReportType('electricity-consumptions')) {
+            $summary['Total electricity consumption (kWh)'] = round($electricity->sum(fn ($record) => $record->totalKwh()), 2);
+        }
+
+        if ($user->canAccessReportType('fuel-prices')) {
+            $summary['Latest average diesel price'] = $fuel?->averageDieselPrice() ?? 0;
+            $summary['Latest average gasoline price'] = $fuel?->averageGasolinePrice() ?? 0;
+        }
+
+        if ($user->canAccessReportType('fuel-vehicle-uses')) {
+            $summary['Total fuel cost incurred (PHP)'] = round($fuelVehicles->sum(fn ($record) => (float) $record->total_fuel_cost_incurred), 2);
+        }
+
+        if ($user->canAccessReportType('solar-performances')) {
+            $summary['Total solar energy generated (kWh)'] = round($solar->sum('monthly_solar_energy_kwh'), 2);
+            $summary['Estimated solar savings'] = round($solar->sum('estimated_savings'), 2);
+        }
+
+        if ($user->canAccessReportType('student-service-volumes')) {
+            $summary['Student service transactions'] = (int) $services->sum('student_transactions_count');
+        }
+
+        if ($user->canAccessReportType('estimated-savings')) {
+            $summary['Total estimated yearly savings'] = round($savings->sum('total_estimated_savings'), 2);
+        }
+
+        return $summary;
     }
 
     private function filterCollection(Request $request, Collection $records): Collection
@@ -212,7 +241,7 @@ class ReportController extends Controller
     private function narrative(Request $request, string $moduleKey): string
     {
         $period = trim(($request->filled('reporting_month') ? $this->months()[(int) $request->input('reporting_month')] : 'selected month').' '.($request->input('reporting_year') ?: 'selected year'));
-        $module = $moduleKey === 'all' ? 'all report categories' : $this->modules()[$moduleKey]['label'];
+        $module = $moduleKey === 'all' ? 'all accessible report categories' : $this->modules($request)[$moduleKey]['label'];
 
         return "This report summarizes {$module} for {$period}. Figures are based on submitted records available in the system and are intended to support the monthly brief for the Office of the President and the Core Presidents Council.";
     }
@@ -220,11 +249,19 @@ class ReportController extends Controller
     private function validatedModuleKey(Request $request): string
     {
         $key = $request->input('module', 'all');
+        $modules = $this->modules($request);
 
-        return $key === 'all' || array_key_exists($key, $this->modules()) ? $key : 'all';
+        return $key === 'all' || array_key_exists($key, $modules) ? $key : 'all';
     }
 
-    private function modules(): array
+    private function modules(Request $request): array
+    {
+        return collect($this->allModules())
+            ->filter(fn (array $module, string $key) => $request->user()->canAccessReportType($key))
+            ->all();
+    }
+
+    private function allModules(): array
     {
         return [
             'fuel-prices' => [

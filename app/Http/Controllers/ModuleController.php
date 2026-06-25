@@ -33,6 +33,8 @@ abstract class ModuleController extends Controller
 
     public function index(Request $request): View
     {
+        $this->authorizeModuleAccess($request);
+
         $records = $this->queryFor($request)
             ->latest()
             ->paginate(10)
@@ -44,8 +46,10 @@ abstract class ModuleController extends Controller
         ]));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $this->authorizeModuleAccess($request);
+
         return view('modules.create', $this->viewData([
             'record' => new $this->modelClass,
         ]));
@@ -53,6 +57,8 @@ abstract class ModuleController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorizeModuleAccess($request);
+
         $data = $this->validatedData($request);
         $data['user_id'] = $request->user()->id;
         $data = $this->beforeSave($data, $request, null);
@@ -67,6 +73,8 @@ abstract class ModuleController extends Controller
 
     public function show(Request $request, int $id): View
     {
+        $this->authorizeModuleAccess($request);
+
         $record = $this->findVisibleRecord($request, $id);
 
         return view('modules.show', $this->viewData([
@@ -77,7 +85,9 @@ abstract class ModuleController extends Controller
 
     public function edit(Request $request, int $id): View
     {
-        $record = $this->findVisibleRecord($request, $id);
+        $this->authorizeModuleAccess($request);
+
+        $record = $this->findEditableRecord($request, $id);
 
         return view('modules.edit', $this->viewData([
             'record' => $record,
@@ -86,7 +96,9 @@ abstract class ModuleController extends Controller
 
     public function update(Request $request, int $id): RedirectResponse
     {
-        $record = $this->findVisibleRecord($request, $id);
+        $this->authorizeModuleAccess($request);
+
+        $record = $this->findEditableRecord($request, $id);
         $data = $this->beforeSave($this->validatedData($request), $request, $record);
 
         $record->update($data);
@@ -99,7 +111,9 @@ abstract class ModuleController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
-        $record = $this->findVisibleRecord($request, $id);
+        $this->authorizeModuleAccess($request);
+
+        $record = $this->findEditableRecord($request, $id);
         $record->delete();
 
         return redirect()
@@ -109,7 +123,9 @@ abstract class ModuleController extends Controller
 
     protected function queryFor(Request $request)
     {
-        $query = $this->modelClass::query()->visibleTo($request->user());
+        $this->authorizeModuleAccess($request);
+
+        $query = $this->modelClass::query();
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
@@ -146,9 +162,24 @@ abstract class ModuleController extends Controller
 
     protected function findVisibleRecord(Request $request, int $id): Model
     {
+        $this->authorizeModuleAccess($request);
+
         return $this->modelClass::query()
-            ->visibleTo($request->user())
             ->findOrFail($id);
+    }
+
+    protected function findEditableRecord(Request $request, int $id): Model
+    {
+        $record = $this->findVisibleRecord($request, $id);
+
+        abort_unless($record->isOwnedBy($request->user()), 403);
+
+        return $record;
+    }
+
+    protected function authorizeModuleAccess(Request $request): void
+    {
+        abort_unless($request->user()->canAccessReportType($this->routeName), 403);
     }
 
     protected function validatedData(Request $request): array

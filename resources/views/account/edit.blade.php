@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Account Settings - Energy Crisis Dashboard')
+@section('title', 'Account Settings - University Energy Monitoring Dashboard')
 
 @section('content')
     <div class="portal-panel">

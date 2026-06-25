@@ -355,16 +355,32 @@
 
         <div class="nav-section">Data Modules</div>
         <nav class="nav flex-column">
-            <a class="nav-link {{ request()->routeIs('fuel-prices.*') ? 'active' : '' }}" href="{{ route('fuel-prices.index') }}"><i class="bi bi-fuel-pump"></i> Weekly Fuel Prices</a>
-            <a class="nav-link {{ request()->routeIs('electricity-consumptions.*') ? 'active' : '' }}" href="{{ route('electricity-consumptions.index') }}"><i class="bi bi-lightning-charge"></i> Electricity Consumption</a>
-            <a class="nav-link {{ request()->routeIs('fuel-vehicle-uses.*') ? 'active' : '' }}" href="{{ route('fuel-vehicle-uses.index') }}"><i class="bi bi-truck"></i> Fuel and Vehicle Use</a>
-            <a class="nav-link {{ request()->routeIs('solar-performances.*') ? 'active' : '' }}" href="{{ route('solar-performances.index') }}"><i class="bi bi-sun"></i> Solar Savings</a>
-            <a class="nav-link {{ request()->routeIs('student-service-volumes.*') ? 'active' : '' }}" href="{{ route('student-service-volumes.index') }}"><i class="bi bi-people"></i> Student Service Volume</a>
-            <a class="nav-link {{ request()->routeIs('estimated-savings.*') ? 'active' : '' }}" href="{{ route('estimated-savings.index') }}"><i class="bi bi-cash-coin"></i> Estimated Savings</a>
+            @if (auth()->user()?->canAccessReportType('fuel-prices'))
+                <a class="nav-link {{ request()->routeIs('fuel-prices.*') ? 'active' : '' }}" href="{{ route('fuel-prices.index') }}"><i class="bi bi-fuel-pump"></i> Weekly Fuel Prices</a>
+            @endif
+            @if (auth()->user()?->canAccessReportType('electricity-consumptions'))
+                <a class="nav-link {{ request()->routeIs('electricity-consumptions.*') ? 'active' : '' }}" href="{{ route('electricity-consumptions.index') }}"><i class="bi bi-lightning-charge"></i> Electricity Consumption</a>
+            @endif
+            @if (auth()->user()?->canAccessReportType('fuel-vehicle-uses'))
+                <a class="nav-link {{ request()->routeIs('fuel-vehicle-uses.*') ? 'active' : '' }}" href="{{ route('fuel-vehicle-uses.index') }}"><i class="bi bi-truck"></i> Fuel and Vehicle Use</a>
+            @endif
+            @if (auth()->user()?->canAccessReportType('solar-performances'))
+                <a class="nav-link {{ request()->routeIs('solar-performances.*') ? 'active' : '' }}" href="{{ route('solar-performances.index') }}"><i class="bi bi-sun"></i> Solar Savings</a>
+            @endif
+            @if (auth()->user()?->canAccessReportType('student-service-volumes'))
+                <a class="nav-link {{ request()->routeIs('student-service-volumes.*') ? 'active' : '' }}" href="{{ route('student-service-volumes.index') }}"><i class="bi bi-people"></i> Student Service Volume</a>
+            @endif
+            @if (auth()->user()?->canAccessReportType('estimated-savings'))
+                <a class="nav-link {{ request()->routeIs('estimated-savings.*') ? 'active' : '' }}" href="{{ route('estimated-savings.index') }}"><i class="bi bi-cash-coin"></i> Estimated Savings</a>
+            @endif
         </nav>
 
         <div class="nav-section">Common Menu</div>
         <nav class="nav flex-column mb-4">
+            @if (auth()->user()?->isAdmin())
+                <a class="nav-link {{ request()->routeIs('accounts.*') ? 'active' : '' }}" href="{{ route('accounts.index') }}"><i class="bi bi-people-fill"></i> Account Management</a>
+                <a class="nav-link {{ request()->routeIs('responder-approvals.*') ? 'active' : '' }}" href="{{ route('responder-approvals.index') }}"><i class="bi bi-person-check"></i> Responder Approvals</a>
+            @endif
             <a class="nav-link {{ request()->routeIs('account.*') ? 'active' : '' }}" href="{{ route('account.edit') }}"><i class="bi bi-person-gear"></i> Account Settings</a>
             <form method="POST" action="{{ route('logout') }}" class="px-2 mt-2">
                 @csrf
@@ -378,7 +394,7 @@
             <button class="sidebar-toggle" type="button" id="sidebarToggle" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="true" title="Toggle navigation">
                 <i class="bi bi-list fs-4"></i>
             </button>
-            <span class="fw-semibold">Energy Crisis Learning Continuity Dashboard</span>
+            <span class="fw-semibold">University Energy Monitoring Dashboard</span>
         </div>
         <div class="d-flex align-items-center gap-3 small">
             <div class="dropdown">

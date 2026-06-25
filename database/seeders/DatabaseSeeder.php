@@ -18,16 +18,22 @@ class DatabaseSeeder extends Seeder
     {
         $admin = User::create([
             'name' => 'Energy Dashboard Admin',
+            'office_name' => 'Administration',
             'email' => 'admin@example.edu',
             'password' => Hash::make('password'),
             'role' => 'admin',
+            'approved_at' => now(),
+            'report_types' => array_keys(User::REPORT_TYPES),
         ]);
 
         $respondent = User::create([
             'name' => 'Juan Dela Cruz',
+            'office_name' => 'Facilities Office',
             'email' => 'respondent@example.edu',
             'password' => Hash::make('password'),
             'role' => 'respondent',
+            'approved_at' => now(),
+            'report_types' => array_keys(User::REPORT_TYPES),
         ]);
 
         $this->seedFuelPrices($respondent);

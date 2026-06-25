@@ -116,12 +116,14 @@
                                 <td class="text-end no-print">
                                     <div class="btn-group btn-group-sm">
                                         <a class="btn btn-outline-primary" href="{{ route($routeName.'.show', $record) }}">View Full Report</a>
-                                        <a class="btn btn-outline-secondary" href="{{ route($routeName.'.edit', $record) }}" title="Edit"><i class="bi bi-pencil"></i></a>
-                                        <form method="POST" action="{{ route($routeName.'.destroy', $record) }}" onsubmit="return confirm('Delete this record?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="btn btn-outline-danger" type="submit" title="Delete"><i class="bi bi-trash"></i></button>
-                                        </form>
+                                        @if ($record->isOwnedBy(auth()->user()))
+                                            <a class="btn btn-outline-secondary" href="{{ route($routeName.'.edit', $record) }}" title="Edit"><i class="bi bi-pencil"></i></a>
+                                            <form method="POST" action="{{ route($routeName.'.destroy', $record) }}" onsubmit="return confirm('Delete this record?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-outline-danger" type="submit" title="Delete"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

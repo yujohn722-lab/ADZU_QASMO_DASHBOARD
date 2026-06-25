@@ -16,11 +16,13 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): View
     {
-        $categories = $this->categories();
+        $categories = $this->categories($request);
         $selectedCategory = $request->input('category', 'fuel-prices');
 
+        abort_if(empty($categories), 403);
+
         if (! array_key_exists($selectedCategory, $categories)) {
-            $selectedCategory = 'fuel-prices';
+            $selectedCategory = array_key_first($categories) ?? 'fuel-prices';
         }
 
         $categoryData = match ($selectedCategory) {
@@ -38,16 +40,20 @@ class DashboardController extends Controller
         ]));
     }
 
-    private function categories(): array
+    private function categories(Request $request): array
     {
-        return [
-            'fuel-prices' => ['label' => 'Weekly Fuel Prices', 'icon' => 'bi-fuel-pump'],
-            'electricity' => ['label' => 'Electricity Consumption', 'icon' => 'bi-lightning-charge'],
-            'fuel-vehicle-use' => ['label' => 'Fuel and Vehicle Use', 'icon' => 'bi-truck'],
-            'solar' => ['label' => 'Solar Savings', 'icon' => 'bi-sun'],
-            'student-services' => ['label' => 'Student Service Volume', 'icon' => 'bi-people'],
-            'estimated-savings' => ['label' => 'Estimated Savings', 'icon' => 'bi-cash-coin'],
+        $categories = [
+            'fuel-prices' => ['label' => 'Weekly Fuel Prices', 'icon' => 'bi-fuel-pump', 'module' => 'fuel-prices'],
+            'electricity' => ['label' => 'Electricity Consumption', 'icon' => 'bi-lightning-charge', 'module' => 'electricity-consumptions'],
+            'fuel-vehicle-use' => ['label' => 'Fuel and Vehicle Use', 'icon' => 'bi-truck', 'module' => 'fuel-vehicle-uses'],
+            'solar' => ['label' => 'Solar Savings', 'icon' => 'bi-sun', 'module' => 'solar-performances'],
+            'student-services' => ['label' => 'Student Service Volume', 'icon' => 'bi-people', 'module' => 'student-service-volumes'],
+            'estimated-savings' => ['label' => 'Estimated Savings', 'icon' => 'bi-cash-coin', 'module' => 'estimated-savings'],
         ];
+
+        return collect($categories)
+            ->filter(fn (array $category) => $request->user()->canAccessReportType($category['module']))
+            ->all();
     }
 
     private function fuelPricesData(Request $request): array
@@ -208,7 +214,7 @@ class DashboardController extends Controller
 
     private function electricityData(Request $request): array
     {
-        $electricity = ElectricityConsumption::visibleTo($request->user())
+        $electricity = ElectricityConsumption::query()
             ->orderBy('reporting_year')
             ->orderBy('reporting_month')
             ->get();
@@ -275,7 +281,7 @@ class DashboardController extends Controller
 
     private function fuelVehicleUseData(Request $request): array
     {
-        $fuelVehicles = FuelVehicleUse::visibleTo($request->user())
+        $fuelVehicles = FuelVehicleUse::query()
             ->orderBy('reporting_year')
             ->orderBy('reporting_month')
             ->get();
@@ -306,7 +312,7 @@ class DashboardController extends Controller
 
     private function solarData(Request $request): array
     {
-        $solar = SolarPerformance::visibleTo($request->user())
+        $solar = SolarPerformance::query()
             ->orderBy('reporting_year')
             ->orderBy('reporting_month')
             ->get();
@@ -360,7 +366,7 @@ class DashboardController extends Controller
 
     private function studentServicesData(Request $request): array
     {
-        $services = StudentServiceVolume::visibleTo($request->user())
+        $services = StudentServiceVolume::query()
             ->orderBy('reporting_year')
             ->orderBy('reporting_month')
             ->get();
@@ -406,7 +412,7 @@ class DashboardController extends Controller
 
     private function estimatedSavingsData(Request $request): array
     {
-        $savings = EstimatedSaving::visibleTo($request->user())
+        $savings = EstimatedSaving::query()
             ->orderBy('reporting_year')
             ->get();
 
