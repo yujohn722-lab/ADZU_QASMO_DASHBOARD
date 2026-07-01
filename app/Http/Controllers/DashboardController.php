@@ -209,6 +209,7 @@ class DashboardController extends Controller
                     'wide' => true,
                 ],
             ],
+            'remarks' => $this->remarksFor($fuelPrices, 'Weekly Fuel Prices'),
         ];
     }
 
@@ -276,6 +277,7 @@ class DashboardController extends Controller
                     'wide' => true,
                 ],
             ],
+            'remarks' => $this->remarksFor($electricity, 'Electricity Consumption'),
         ];
     }
 
@@ -389,6 +391,7 @@ class DashboardController extends Controller
                     ],
                 ],
             ],
+            'remarks' => $this->remarksFor($fuelVehicles, 'Fuel and Vehicle Use'),
         ];
     }
 
@@ -493,6 +496,7 @@ class DashboardController extends Controller
                     'wide' => true,
                 ],
             ],
+            'remarks' => $this->remarksFor($solar, 'Solar Savings'),
         ];
     }
 
@@ -539,6 +543,7 @@ class DashboardController extends Controller
                     'datasets' => [$this->lineDataset('Student transactions', $monthlyTransactions->values(), '#073f8f')],
                 ],
             ],
+            'remarks' => $this->remarksFor($services, 'Student Service Volume'),
         ];
     }
 
@@ -602,7 +607,48 @@ class DashboardController extends Controller
                     'wide' => true,
                 ],
             ],
+            'remarks' => $this->remarksFor($savings, 'Estimated Savings'),
         ];
+    }
+
+    private function remarksFor(Collection $records, string $moduleLabel): Collection
+    {
+        return $records
+            ->sortByDesc(fn ($record) => ($record->reporting_year ?? 0) * 10000 + ((int) ($record->reporting_month ?? 0) * 100) + (int) ($record->week_number ?? 0))
+            ->map(function ($record) use ($moduleLabel) {
+                $recordRemarks = trim((string) ($record->remarks ?? ''));
+
+                if ($recordRemarks === '') {
+                    return null;
+                }
+
+                return [
+                    'module' => $moduleLabel,
+                    'respondent' => $record->respondent_name ?: 'Respondent',
+                    'period' => $this->periodLabel($record),
+                    'recordRemarks' => $recordRemarks,
+                ];
+            })
+            ->filter()
+            ->take(8)
+            ->values();
+    }
+
+    private function periodLabel(object $record): string
+    {
+        $year = $record->reporting_year ?? null;
+        $month = $record->reporting_month ?? null;
+        $week = $record->week_number ?? null;
+
+        if ($year && $month && $week) {
+            return $year.' '.$this->monthName((int) $month).' W'.$week;
+        }
+
+        if ($year && $month) {
+            return $year.' '.$this->monthName((int) $month);
+        }
+
+        return $year ? (string) $year : 'No period';
     }
 
     private function monthlyTrend(Collection $records, callable $valueResolver): Collection

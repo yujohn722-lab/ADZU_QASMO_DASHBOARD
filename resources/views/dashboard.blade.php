@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard - Energy Crisis Dashboard')
+@section('title', 'Dashboard - University Monitoring Dashboard')
 
 @section('content')
     <div class="portal-panel">
@@ -74,6 +74,35 @@
                 </div>
             </div>
         @endforeach
+    </div>
+
+    <div class="portal-panel mt-3">
+        <div class="portal-panel-header">
+            <div class="title"><i class="bi bi-chat-left-text"></i> Responder Remarks</div>
+            <span class="text-muted">{{ ($remarks ?? collect())->count() }} item(s)</span>
+        </div>
+        <div class="portal-panel-body">
+            @if (($remarks ?? collect())->isNotEmpty())
+                <div class="row g-3">
+                    @foreach ($remarks as $comment)
+                        <div class="col-xl-6">
+                            <div class="border rounded-2 p-3 h-100 bg-light">
+                                <div class="d-flex justify-content-between gap-3 mb-2">
+                                    <div>
+                                        <div class="fw-semibold">{{ $comment['respondent'] }}</div>
+                                        <div class="text-muted small">{{ $comment['module'] }} - {{ $comment['period'] }}</div>
+                                    </div>
+                                </div>
+
+                                <div>{!! nl2br(e($comment['recordRemarks'])) !!}</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="text-muted">No responder remarks have been added for this report category yet.</div>
+            @endif
+        </div>
     </div>
 @endsection
 

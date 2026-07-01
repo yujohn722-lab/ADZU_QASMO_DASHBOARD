@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Energy Crisis Dashboard')</title>
+    <title>@yield('title', 'University Monitoring Dashboard')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -394,7 +394,7 @@
             <button class="sidebar-toggle" type="button" id="sidebarToggle" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="true" title="Toggle navigation">
                 <i class="bi bi-list fs-4"></i>
             </button>
-            <span class="fw-semibold">University Energy Monitoring Dashboard</span>
+            <span class="fw-semibold">University Monitoring Dashboard</span>
         </div>
         <div class="d-flex align-items-center gap-3 small">
             <div class="dropdown">

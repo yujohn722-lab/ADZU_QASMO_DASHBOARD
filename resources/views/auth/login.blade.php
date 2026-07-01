@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - University Energy Monitoring Dashboard</title>
+    <title>Login - University Monitoring Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -18,7 +18,7 @@
 
         .auth-seal {
             display: block;
-            width: 250px;
+            width: 300px;
             max-width: 42vw;
             margin: 0 auto 22px;
             filter: drop-shadow(0 10px 22px rgba(2, 29, 73, 0.34));
@@ -51,7 +51,7 @@
 
     <div class="login-card">
         <div class="card-header">
-            <i class="bi bi-lightning-charge me-2"></i> University Energy Monitoring Dashboard Login
+            <i class="bi bi-lightning-charge me-2"></i> University Monitoring Dashboard Login
         </div>
         <div class="card-body p-4">
             @if (session('status'))
